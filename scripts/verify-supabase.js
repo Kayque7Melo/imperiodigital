@@ -9,7 +9,8 @@ for (const line of fs.readFileSync(path.join(__dirname, '..', '.env'), 'utf8').s
 if (!process.env.DATABASE_URL) { console.error('DATABASE_URL não configurada.'); process.exit(1); }
 const url = new URL(process.env.DATABASE_URL);
 url.searchParams.delete('sslmode');
-const pool = new Pool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 8000, ssl: { rejectUnauthorized: false } });
+const ca = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'prod-ca-2021.crt'), 'utf8');
+const pool = new Pool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 8000, ssl: { ca, rejectUnauthorized: true } });
 (async () => {
   try {
     const result = await pool.query(`

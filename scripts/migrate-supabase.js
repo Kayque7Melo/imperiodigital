@@ -20,7 +20,8 @@ if (!connectionString) {
 
 const postgresUrl = new URL(connectionString);
 postgresUrl.searchParams.delete('sslmode');
-const pool = new Pool({ connectionString: postgresUrl.toString(), max: 1, connectionTimeoutMillis: 8000, ssl: { rejectUnauthorized: true } });
+const ca = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'prod-ca-2021.crt'), 'utf8');
+const pool = new Pool({ connectionString: postgresUrl.toString(), max: 1, connectionTimeoutMillis: 8000, ssl: { ca, rejectUnauthorized: true } });
 (async () => {
   try {
     const migrationDir = path.join(__dirname, '..', 'supabase', 'migrations');

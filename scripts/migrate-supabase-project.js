@@ -36,7 +36,8 @@ if (!env.BACKUP_ENCRYPTION_KEY) writeEnv({ BACKUP_ENCRYPTION_KEY: key });
 function poolFor(connectionString) {
   const url = new URL(connectionString);
   url.searchParams.delete('sslmode');
-  return new Pool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 8000, ssl: { rejectUnauthorized: true } });
+  const ca = fs.readFileSync(path.join(root, 'supabase', 'prod-ca-2021.crt'), 'utf8');
+  return new Pool({ connectionString: url.toString(), max: 1, connectionTimeoutMillis: 8000, ssl: { ca, rejectUnauthorized: true } });
 }
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');

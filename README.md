@@ -13,11 +13,11 @@ O acesso administrativo usa `ADMIN_USERNAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. 
 ## Banco de dados
 
 - A aplicação usa PostgreSQL pelo servidor Node, com o estado privado no schema `equipe_digital_private` e RLS habilitado.
-- Use `DATABASE_URL` para o servidor e `DIRECT_URL` para aplicar as migrações com `npm run db:migrate`.
+- Use a URI do **Session pooler** do Supabase em `SUPABASE_DB_URL` na Vercel e marque-a como variável secreta. O servidor prioriza essa chave; `DATABASE_URL` permanece como compatibilidade local. Use `DIRECT_URL` para aplicar as migrações (IPv4, porta 5432). A validação TLS usa o certificado CA público versionado em `supabase/prod-ca-2021.crt`.
 - Para migrar o estado de um projeto Supabase antigo, mantenha temporariamente a conexão antiga em `SOURCE_DATABASE_URL`, configure o novo destino em `DIRECT_URL` e execute `npm run db:switch-project`. O processo recusa sobrescrever um destino que já contenha dados, revoga as sessões existentes e cria um backup local criptografado em `backups/`.
 - O backup manual exporta perfis sem hashes de senha, links, pagamentos e histórico de acesso. Ele pode ser baixado na aba “Histórico de acessos”.
 - As URLs e senhas do banco ficam somente em variáveis privadas do servidor. Esta aplicação não usa `SUPABASE_SECRET_KEY` ou chaves Supabase no navegador.
-- O host direto `db.<projeto>.supabase.co` exige uma rede com IPv6. Se sua rede não tiver IPv6, use uma URI de pooler do Supabase compatível com a região do projeto.
+- O host direto `db.<projeto>.supabase.co` exige IPv6. Para ambientes IPv4, copie a URI do Session pooler diretamente do painel do Supabase; não tente adivinhar a região ou o host do pooler.
 
 ## Contas e links
 

@@ -34,7 +34,7 @@ function loadEnv() {
 }
 loadEnv();
 
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL || '';
+const DATABASE_URL = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || '';
 const postgresUrl = DATABASE_URL ? new URL(DATABASE_URL) : null;
 postgresUrl?.searchParams.delete('sslmode');
 const databaseSsl = { ca: fs.readFileSync(path.join(ROOT, 'supabase', 'prod-ca-2021.crt'), 'utf8'), rejectUnauthorized: true };

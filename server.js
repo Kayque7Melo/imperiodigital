@@ -137,12 +137,13 @@ function initialDatabaseState() {
   return { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, sessions: [...sessions.entries()] };
 }
 async function withDatabaseState(req, res, url, runHandler = handleApi) {
-  const client = await databasePool.connect();
+  let client = null;
   let responseHead = null;
   let responseCompletion = null;
   let originalHead;
   let originalEnd;
   try {
+    client = await databasePool.connect();
     await client.query('BEGIN');
     await client.query("select pg_advisory_xact_lock(hashtext('equipe-digital-app-state'))");
     let result = await client.query('select state from equipe_digital_private.app_state where id = 1 for update');
@@ -184,10 +185,13 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     await runHandler(req, res, url);
     if (responseCompletion) await responseCompletion;
   } catch (error) {
-    try { await client.query('ROLLBACK'); } catch {}
-    client.release(); activeDatabaseClient = null;
+    if (client) {
+      try { await client.query('ROLLBACK'); } catch {}
+      client.release();
+    }
+    activeDatabaseClient = null;
     console.error('Supabase request failed:', error.message);
-    json(res, 503, { error: 'Banco Supabase indisponível. Confira DATABASE_URL e a migração.' });
+    if (!res.headersSent) json(res, 503, { error: 'Banco Supabase indisponível. Confira DATABASE_URL e o pooler do projeto.' });
   }
 }
 function addNotification(userId, eventType, title, message, extras = {}) {

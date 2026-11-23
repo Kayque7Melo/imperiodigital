@@ -259,10 +259,21 @@ function sessionFor(req) {
 function currentUser(session) { return users.find(user => user.id === session.userId && user.active); }
 function csrfOkay(req, session) { return req.headers['x-csrf-token'] === session.csrf; }
 function cleanUser(user) { return user ? { id: user.id, name: user.name, username: user.username, email: user.email || '', avatar: user.avatar ? `/api/profile/avatar${user.avatar.replace(/^\/avatars\//, '/')}?v=${encodeURIComponent(user.avatarUpdatedAt || '1')}&r=2` : '', role: user.role, active: user.active, createdAt: user.createdAt } : null; }
-function linkRateFor(user) { return Number.isInteger(user?.linkValueCents) && user.linkValueCents >= 0 ? user.linkValueCents : 5000; }
+// Retorna o valor por link considerando bmLimit e campos separados por BM
+function linkRateFor(user, bmLimit = '') {
+  if (bmLimit === '2000' && Number.isInteger(user?.linkValue2000Cents) && user.linkValue2000Cents >= 0) return user.linkValue2000Cents;
+  if (bmLimit === '250'  && Number.isInteger(user?.linkValue250Cents)  && user.linkValue250Cents  >= 0) return user.linkValue250Cents;
+  // fallback para campo legado único
+  if (Number.isInteger(user?.linkValueCents) && user.linkValueCents >= 0) return user.linkValueCents;
+  return 5000;
+}
+function dailyRateFor(user) { return Number.isInteger(user?.dailyRateCents) && user.dailyRateCents >= 0 ? user.dailyRateCents : 0; }
+function paymentModeFor(user) { return user?.paymentMode === 'daily' ? 'daily' : 'per-link'; }
 function linkValueFor(link) { return Number.isInteger(link.valueCents) && link.valueCents >= 0 ? link.valueCents : 5000; }
 function balanceFor(userId) { return links.filter(link => link.userId === userId && link.status === 'approved' && !link.paidAt).reduce((total, link) => total + linkValueFor(link), 0); }
 function teamBalance() { return links.filter(link => link.status === 'approved' && !link.paidAt).reduce((total, link) => total + linkValueFor(link), 0); }
+function teamTotalPaid() { return payouts.reduce((t, p) => t + (p.amountCents || 0), 0); }
+function teamGrossRevenue() { return links.filter(link => link.status === 'approved').reduce((t, link) => t + linkValueFor(link), 0) + teamTotalPaid(); }
 function adminLinkRateFor(admin) { return Number.isInteger(admin?.adminLinkValueCents) && admin.adminLinkValueCents >= 0 ? admin.adminLinkValueCents : 5000; }
 function adminApprovedLinkCount(admin) {
   const memberHistory = users.filter(member => member.role !== 'admin').reduce((total, member) => total + Math.max(0, Number(member.approvedLinks) || 0), 0);
@@ -395,8 +406,23 @@ async function handleApi(req, res, url) {
     const personalApprovedCount = user.role === 'admin' ? adminApprovedLinkCount(user) : 0;
     const personalBalanceCents = user.role === 'admin' ? adminPersonalBalance(user) : 0;
     const pendingCount = user.role === 'admin' ? links.filter(link => link.status === 'pending' || (link.status === 'rejected' && link.reanalysisRequestedAt)).length : userLinks.filter(link => link.status === 'pending').length;
-    const stats = [{ label: 'Pessoas na equipe', value: String(active).padStart(2, '0'), detail: 'contas ativas', icon: 'people' }, { label: user.role === 'admin' ? 'Links pendentes' : 'Seus links', value: String(user.role === 'admin' ? pendingCount : userLinks.length).padStart(2, '0'), detail: user.role === 'admin' ? 'aguardando análise' : 'envios registrados', icon: 'shield' }, { label: user.role === 'admin' ? 'Links aprovados' : 'Links analisados', value: String(user.role === 'admin' ? links.filter(link => link.status === 'approved' && !link.paidAt).length : approvedCount).padStart(2, '0'), detail: user.role === 'admin' ? 'na fila de gestão' : `${approvedCount} aprovados`, icon: 'spark' }, ...(user.role === 'admin' ? [{ label: 'Meu saldo pessoal', value: (personalBalanceCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), detail: `${personalApprovedCount} links aprovados`, icon: 'spark' }] : [])];
-    return json(res, 200, { user: cleanUser(user), stats, members: recent, admin: user.role === 'admin', ...(user.role === 'admin' ? { balanceCents: teamBalance(), personalBalanceCents, personalApprovedCount, adminLinkValueCents: adminLinkRateFor(user) } : {}), approvedCount, pendingCount, impersonating: found.session.adminMode });
+    const teamPending = teamBalance();
+    const totalPaid = teamTotalPaid();
+    const grossRevenue = teamGrossRevenue();
+    const stats = user.role === 'admin' ? [
+      { label: 'Pessoas na equipe', value: String(active).padStart(2, '0'), detail: 'contas ativas', icon: 'people' },
+      { label: 'Links pendentes', value: String(pendingCount).padStart(2, '0'), detail: 'aguardando análise', icon: 'shield' },
+      { label: 'Links aprovados', value: String(links.filter(l => l.status === 'approved' && !l.paidAt).length).padStart(2, '0'), detail: 'na fila de gestão', icon: 'spark' },
+      { label: 'A pagar à equipe', value: (teamPending / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), detail: 'saldo pendente de pagamento', icon: 'spark' },
+      { label: 'Já pago à equipe', value: (totalPaid / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), detail: 'total de pagamentos registrados', icon: 'check' },
+      { label: 'Faturamento bruto', value: (grossRevenue / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), detail: `${links.filter(l => l.status === 'approved').length} links aprovados`, icon: 'chart' },
+      { label: 'Meu saldo pessoal', value: (personalBalanceCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), detail: `${personalApprovedCount} links aprovados`, icon: 'spark' },
+    ] : [
+      { label: 'Seus links', value: String(userLinks.length).padStart(2, '0'), detail: 'envios registrados', icon: 'link' },
+      { label: 'Aprovados', value: String(approvedCount).padStart(2, '0'), detail: 'links aprovados', icon: 'check' },
+      { label: 'Pendentes', value: String(pendingCount).padStart(2, '0'), detail: 'aguardando análise', icon: 'clock' },
+    ];
+    return json(res, 200, { user: cleanUser(user), stats, members: recent, admin: user.role === 'admin', ...(user.role === 'admin' ? { balanceCents: teamPending, totalPaidCents: totalPaid, grossRevenueCents: grossRevenue, personalBalanceCents, personalApprovedCount, adminLinkValueCents: adminLinkRateFor(user) } : {}), approvedCount, pendingCount, impersonating: found.session.adminMode });
   }
   if (url.pathname === '/api/return-admin' && req.method === 'POST') {
     const admin = users.find(item => item.id === found.session.originalUserId && item.role === 'admin' && item.active);
@@ -488,7 +514,7 @@ async function handleApi(req, res, url) {
   }
   if (url.pathname === '/api/payouts' && req.method === 'GET') {
     if (user.role !== 'admin') return json(res, 403, { error: 'Apenas o administrador pode consultar pagamentos.' });
-    return json(res, 200, { payouts: payouts.slice(0,100), balances: users.filter(item=>item.role!=='admin').map(member=>({ userId:member.id, name:member.name, username:member.username, avatar:member.avatar, linkValueCents:linkRateFor(member), approvedCount:links.filter(link=>link.userId===member.id&&link.status==='approved'&&!link.paidAt).length, balanceCents:balanceFor(member.id) })) });
+    return json(res, 200, { payouts: payouts.slice(0,100), balances: users.filter(item=>item.role!=='admin').map(member=>({ userId:member.id, name:member.name, username:member.username, avatar:member.avatar, linkValueCents:linkRateFor(member), linkValue250Cents: member.linkValue250Cents ?? null, linkValue2000Cents: member.linkValue2000Cents ?? null, paymentMode: paymentModeFor(member), dailyRateCents: dailyRateFor(member), approvedCount:links.filter(link=>link.userId===member.id&&link.status==='approved'&&!link.paidAt).length, balanceCents:balanceFor(member.id) })) });
   }
   if (url.pathname === '/api/access-history' && req.method === 'GET') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode consultar os acessos.' });
@@ -559,7 +585,7 @@ async function handleApi(req, res, url) {
     link.decidedBy = user.id;
     link.reason = body.status === 'rejected' ? String(body.reason || '').trim().slice(0, 240) : '';
     link.reanalysisRequestedAt = null;
-    if (body.status === 'approved') { const owner = users.find(item => item.id === link.userId); link.valueCents = linkRateFor(owner); if (owner) owner.approvedLinks = (owner.approvedLinks || 0) + 1; if (admin) { admin.approvedLinksTotal = adminApprovedCountBefore + 1; admin.personalBalanceCents = adminPersonalBalanceBefore + adminLinkRateFor(admin); saveUsers(users); } }
+    if (body.status === 'approved') { const owner = users.find(item => item.id === link.userId); link.valueCents = linkRateFor(owner, link.bmLimit); if (owner) owner.approvedLinks = (owner.approvedLinks || 0) + 1; if (admin) { admin.approvedLinksTotal = adminApprovedCountBefore + 1; admin.personalBalanceCents = adminPersonalBalanceBefore + adminLinkRateFor(admin); saveUsers(users); } }
     else link.valueCents = 0;
     const activity = linkActivity.find(item=>item.id===link.id); if(activity){activity.status=link.status;saveList(ACTIVITY_FILE,linkActivity)}
     saveLinks(links);
@@ -649,7 +675,7 @@ async function handleApi(req, res, url) {
     return json(res, 200, { user: cleanUser(user) });
   }
   if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode gerenciar contas.' });
-  if (url.pathname === '/api/users' && req.method === 'GET') return json(res, 200, { users: users.map(member => ({ ...cleanUser(member), ...(member.role === 'admin' ? {} : { linkValueCents: linkRateFor(member) }) })) });
+  if (url.pathname === '/api/users' && req.method === 'GET') return json(res, 200, { users: users.map(member => ({ ...cleanUser(member), ...(member.role === 'admin' ? {} : { linkValueCents: linkRateFor(member), linkValue250Cents: member.linkValue250Cents ?? null, linkValue2000Cents: member.linkValue2000Cents ?? null, paymentMode: paymentModeFor(member), dailyRateCents: dailyRateFor(member) }) })) });
   if (url.pathname === '/api/users' && req.method === 'POST') {
     let body;
     try { body = await readBody(req); } catch (error) { return json(res, 400, { error: error.message }); }
@@ -663,7 +689,7 @@ async function handleApi(req, res, url) {
     if (password.length < 8 || password.length > 128) return json(res, 400, { error: 'A senha deve ter pelo menos 8 caracteres.' });
     if (users.some(item => item.username === username)) return json(res, 409, { error: 'Este login já está em uso.' });
     if (users.some(item => (item.email || '').toLowerCase() === email)) return json(res, 409, { error: 'Este e-mail já está cadastrado.' });
-    const created = { id: crypto.randomUUID(), name, username, email, role: 'user', active: true, avatar: '', linkValueCents: 5000, ...hashPassword(password), createdAt: new Date().toISOString() };
+    const created = { id: crypto.randomUUID(), name, username, email, role: 'user', active: true, avatar: '', linkValueCents: 5000, linkValue250Cents: 5000, linkValue2000Cents: 5000, paymentMode: 'per-link', dailyRateCents: 0, ...hashPassword(password), createdAt: new Date().toISOString() };
     users.push(created); saveUsers(users);
     return json(res, 201, { user: cleanUser(created) });
   }
@@ -686,6 +712,22 @@ async function handleApi(req, res, url) {
       const linkValueCents = Number(body.linkValueCents);
       if (!Number.isInteger(linkValueCents) || linkValueCents < 1 || linkValueCents > 10_000_000) return json(res, 400, { error: 'O valor por link deve estar entre R$ 0,01 e R$ 100.000,00.' });
       target.linkValueCents = linkValueCents;
+    }
+    for (const field of ['linkValue250Cents', 'linkValue2000Cents']) {
+      if (Object.hasOwn(body, field)) {
+        const v = Number(body[field]);
+        if (!Number.isInteger(v) || v < 0 || v > 10_000_000) return json(res, 400, { error: 'O valor por link deve estar entre R$ 0,00 e R$ 100.000,00.' });
+        target[field] = v;
+      }
+    }
+    if (Object.hasOwn(body, 'paymentMode')) {
+      if (!['per-link', 'daily'].includes(body.paymentMode)) return json(res, 400, { error: 'Modo de pagamento inválido.' });
+      target.paymentMode = body.paymentMode;
+    }
+    if (Object.hasOwn(body, 'dailyRateCents')) {
+      const v = Number(body.dailyRateCents);
+      if (!Number.isInteger(v) || v < 0 || v > 10_000_000) return json(res, 400, { error: 'O valor da diária deve estar entre R$ 0,00 e R$ 100.000,00.' });
+      target.dailyRateCents = v;
     }
     if (body.password) {
       if (String(body.password).length < 8) return json(res, 400, { error: 'A nova senha deve ter pelo menos 8 caracteres.' });

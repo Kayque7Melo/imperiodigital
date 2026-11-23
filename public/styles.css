@@ -1187,3 +1187,113 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms!important; animation-iteration-count: 1!important; transition-duration: .01ms!important }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   MÉTRICAS ADMIN — grid de 7 cards (financeiro)
+══════════════════════════════════════════════════════════════════════ */
+.metrics-admin-full {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 12px;
+}
+/* Última linha: 3 cards centralizados */
+.metrics-admin-full .metric:nth-child(5),
+.metrics-admin-full .metric:nth-child(6),
+.metrics-admin-full .metric:nth-child(7) {
+  /* mantém o grid preenchendo normalmente */
+}
+@media (max-width: 1200px) { .metrics-admin-full { grid-template-columns: repeat(3, minmax(0,1fr)) } }
+@media (max-width: 900px)  { .metrics-admin-full { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+@media (max-width: 760px)  { .metrics-admin-full { grid-template-columns: repeat(2, minmax(0,1fr)) } }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LINK VALUES v2 — card com modo de pagamento
+══════════════════════════════════════════════════════════════════════ */
+.link-value-card-v2 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 14px 16px;
+  padding: 16px 18px;
+  align-items: start;
+}
+.lvc-header {
+  grid-column: 1; grid-row: 1;
+  display: flex; align-items: center; gap: 10px;
+}
+.lvc-save-btn {
+  grid-column: 2; grid-row: 1 / span 3;
+  align-self: center;
+  white-space: nowrap; height: 38px;
+}
+.lvc-mode-row {
+  grid-column: 1; grid-row: 2;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.lvc-label { font-size: 10px; color: var(--text3); white-space: nowrap }
+.lvc-mode-tabs {
+  display: flex; gap: 6px;
+}
+.lvc-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  font-size: 11px; font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text2);
+  transition: background .18s, border-color .18s, color .18s;
+  user-select: none;
+}
+.lvc-tab input { position: absolute; opacity: 0; pointer-events: none }
+.lvc-tab:hover { background: rgba(75,158,255,.10); border-color: rgba(75,158,255,.25); color: var(--text) }
+.lvc-tab.active { background: rgba(75,158,255,.18); border-color: rgba(75,158,255,.38); color: var(--blue2) }
+.lvc-fields-per-link,
+.lvc-fields-daily {
+  grid-column: 1; grid-row: 3;
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.lvc-fields-per-link[hidden],
+.lvc-fields-daily[hidden] { display: none }
+.lvc-fields-per-link .link-value-field,
+.lvc-fields-daily .link-value-field,
+.lvc-daily-field { flex: 1; min-width: 130px }
+/* Ajuste responsivo */
+@media (max-width: 760px) {
+  .link-value-card-v2 { grid-template-columns: 1fr; }
+  .lvc-save-btn { grid-column: 1; grid-row: auto; width: 100%; margin-top: 2px }
+  .lvc-fields-per-link, .lvc-fields-daily { flex-direction: column }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FORMULÁRIO DE ENVIO DE LINKS — melhorado
+══════════════════════════════════════════════════════════════════════ */
+.link-form-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 11px;
+  align-items: end;
+}
+.link-form-url   { grid-column: 1 / -1 }
+.link-form-label { grid-column: 1 / -1 }
+.link-form-selects {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+.link-form-submit-btn {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  font-size: 14px;
+}
+.req-mark      { color: var(--red); font-weight: 700 }
+.optional-mark { color: var(--text3); font-weight: 400; font-size: 10px }
+@media (max-width: 760px) {
+  .link-form-selects { grid-template-columns: 1fr }
+}
+/* ══════════════════════════════════════════════════════════════════════
+   LIGHT THEME additions
+══════════════════════════════════════════════════════════════════════ */
+html[data-theme="light"] .lvc-tab { background: rgba(255,255,255,.8); border-color: rgba(0,0,0,.12); color: #3d5675 }
+html[data-theme="light"] .lvc-tab.active { background: rgba(75,158,255,.12); border-color: rgba(75,158,255,.35); color: #1a65cc }
+html[data-theme="light"] .link-value-card-v2 { background: #fff }

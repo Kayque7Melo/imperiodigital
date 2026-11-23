@@ -1135,12 +1135,33 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
 .tutorial-step-finish { display: block; margin-top: 12px; color: var(--blue2); font-size: 11px }
 .tutorial-step-images { grid-column: 3; grid-row: 1; display: grid; grid-template-columns: 1fr; min-width: 0 }
 .tutorial-step-images figure { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface2) }
-.tutorial-step-images img { display: block; width: 100%; height: auto; max-height: 540px; object-fit: contain; background: #fff }
-.tutorial-step-images figcaption { padding: 9px 10px; color: var(--text2); font-size: 10px; line-height: 1.5 }
+.tutorial-step-images figcaption { display: grid; gap: 5px; padding: 11px 12px; color: var(--text2); font-size: 10px; line-height: 1.5 }
+.tutorial-step-images figcaption strong { color: var(--text); font-size: 12px }
+.tutorial-image-button { display: block; width: 100%; margin: 0; padding: 0; overflow: hidden; border: 0; background: #fff; cursor: zoom-in }
+.tutorial-image-button img { display: block; width: 100%; height: auto; max-height: 540px; object-fit: contain; transition: transform .2s ease }
+.tutorial-image-button:hover img { transform: scale(1.025) }
+.tutorial-image-button:focus-visible { outline: 2px solid var(--blue2); outline-offset: -3px }
 .tutorial-reference { display: grid; grid-template-columns: minmax(0,1fr) minmax(300px,1.15fr); align-items: center; gap: 20px; padding: 20px }
 .tutorial-reference h2 { margin: 7px 0; font: 700 18px/1.3 var(--display) }
 .tutorial-reference p { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.6 }
-.tutorial-reference img { display: block; width: 100%; max-height: 340px; object-fit: contain; border-radius: var(--r-sm); background: #fff }
+.tutorial-reference-image { border: 1px solid var(--border); border-radius: var(--r-md) }
+.tutorial-reference-image img { max-height: 340px; object-fit: contain }
+.tutorial-reference-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px }
+.tutorial-reference-actions a,.tutorial-reference-actions button { display: inline-flex; align-items: center; gap: 7px; text-decoration: none }
+.tutorial-cnpj-access { display: grid; gap: 9px; margin-top: 14px; padding: 13px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface2) }
+.tutorial-cnpj-access[hidden] { display: none }
+.tutorial-cnpj-access > div { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 5px 12px }
+.tutorial-cnpj-access > div span { grid-column: 1; color: var(--text3); font-size: 10px }
+.tutorial-cnpj-access > div strong { grid-column: 1; min-width: 0; overflow-wrap: anywhere; color: var(--text); font-size: 12px }
+.tutorial-cnpj-access > div button { grid-column: 2; grid-row: 1 / span 2; white-space: nowrap }
+.tutorial-cnpj-access > small { color: var(--text3); font-size: 10px; line-height: 1.5 }
+.tutorial-lightbox { position: fixed; inset: 0; width: min(94vw,1100px); max-width: none; height: min(94dvh,1000px); max-height: none; margin: auto; padding: 54px 20px 18px; overflow: auto; border: 1px solid rgba(160,195,230,.24); border-radius: var(--r-lg); color: var(--text); background: #080d14 }
+.tutorial-lightbox::backdrop { background: rgba(0,4,10,.88); backdrop-filter: blur(5px) }
+.tutorial-lightbox-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 11px; color: var(--text); background: var(--surface2); cursor: pointer }
+.tutorial-lightbox-image { display: block; width: 100%; height: calc(100% - 60px); object-fit: contain }
+.tutorial-lightbox-caption { display: grid; gap: 4px; padding-top: 10px; text-align: center }
+.tutorial-lightbox-caption strong { font: 700 13px var(--display) }
+.tutorial-lightbox-caption span { color: var(--text2); font-size: 11px }
 .tutorial-text-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; color: var(--blue2); font-size: 11px; font-weight: 700; text-decoration: none }
 .tutorial-text-link:hover { color: #fff }
 .tutorial-checklist { display: grid; grid-template-columns: minmax(0,.8fr) minmax(260px,1fr); gap: 16px 24px; padding: 20px }

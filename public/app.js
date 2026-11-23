@@ -584,16 +584,14 @@ function tutorialView() {
     { number: '04', title: 'Preencha os dados da empresa', blocks: [{ title: 'Segundo passo', items: ['Preencher razão social, país, endereço, cidade, estado, CEP, telefone empresarial autorizado e site oficial da empresa.', 'Conferir se todas as informações correspondem aos documentos oficiais da empresa.'] }], images: { src: '/tutorial/passo-04-dados-empresa.png', alt: 'Passo 4: preenchimento dos dados empresariais', note: 'Preencha os campos conforme os registros oficiais da empresa.' } },
     { number: '05', title: 'Configure a conta do WhatsApp', blocks: [{ items: ['Acessar a opção Contas do WhatsApp.', 'Clicar em Adicionar.', 'Selecionar Criar conta do WhatsApp.', 'Escolher a categoria correspondente à atividade empresarial.', 'Configurar o número de exibição com um número autorizado e controlado pela empresa.', 'Finalizar a criação da conta.'] }], images: { src: '/tutorial/passo-05-whatsapp.png', alt: 'Passo 5: adição de uma conta do WhatsApp à BM', note: 'Receba códigos somente nos canais autorizados e controlados pela empresa.' } },
     { number: '06', title: 'Solicite a verificação da empresa', blocks: [{ items: ['Acessar Contas de mensagens, selecionar Iniciar verificação e clicar em Começar.', 'Avançar pelas etapas de identificação empresarial.', 'Informar o tipo correto de empresa e selecionar empresa registrada, quando aplicável.', 'Inserir o CNPJ correspondente e confirmar os dados cadastrais.', 'Escolher um método de verificação disponibilizado pela Meta.', 'Enviar os documentos empresariais originais solicitados.', 'Confirmar o telefone empresarial, caso solicitado.', 'Receber o código pelo canal autorizado e inseri-lo no campo indicado.', 'Aguardar a análise e aprovação da Meta.'] }], images: { src: '/tutorial/passo-06-verificacao.png', alt: 'Passo 6: verificação empresarial no WhatsApp', note: 'O envio não garante aprovação. A Meta analisa cada solicitação e pode pedir outras informações.' } },
-    { number: '07', title: 'Adicione pessoas à BM', intro: 'Após concluir as configurações:', blocks: [{ items: ['Acessar a seção Pessoas e clicar em Convidar pessoas.', 'Inserir o e-mail pessoal da pessoa que receberá o acesso.', 'Clicar em Avançar.', 'Selecionar somente as permissões necessárias para as atividades que serão realizadas.', 'Enviar o convite.'] }] },
-    { number: '08', title: 'Finalização', intro: 'Antes de considerar o processo concluído, verificar:', blocks: [{ items: ['BM criada.', 'Informações empresariais preenchidas.', 'Conta do WhatsApp adicionada.', 'Verificação empresarial enviada.', 'Documentos legítimos anexados.', 'Telefone confirmado, quando solicitado.', 'Pessoas convidadas com as permissões adequadas.'] }], finish: 'Processo finalizado após a conferência e a análise da Meta.' },
   ];
   return `<section class="tutorial-page"><div class="tutorial-hero"><div><span class="eyebrow">GUIA DA EQUIPE</span><h1>Criar e configurar uma BM</h1><p>Script de criação e configuração do portfólio empresarial e da conta do WhatsApp.</p></div><div class="tutorial-hero-actions"><a class="primary-btn compact tutorial-official-link" href="${META_CREATE_PORTFOLIO_URL}" target="_blank" rel="noopener noreferrer">${svg('plus', 14)} Criar Portfólio</a><a class="soft-btn tutorial-official-link" href="https://business.facebook.com/" target="_blank" rel="noopener noreferrer">Abrir Meta Business Suite ${svg('arrow', 14)}</a></div></div>
     <div class="tutorial-notice">${svg('shield', 18)}<div><strong>Use informações e documentos verdadeiros</strong><p>Os dados devem corresponder à empresa titular. A Meta define os requisitos e o resultado de cada análise.</p></div></div>
     <section class="tutorial-video panel"><div class="tutorial-video-copy"><span class="eyebrow">VÍDEO DE APOIO</span><h2>Orientação em vídeo</h2><p>O vídeo institucional é servido diretamente dos arquivos do projeto, sem gravar mídia no banco de dados.</p></div><div class="tutorial-media"><div class="tutorial-video-placeholder" aria-label="Vídeo de orientação será adicionado aqui"><span>${svg('play', 34)}</span><strong>Vídeo em breve</strong><small>Adicione <code>public/tutorial/bm-configuracao.mp4</code> ao projeto</small></div><video class="tutorial-player" controls preload="metadata" aria-label="Tutorial em vídeo sobre configuração da BM"><source src="/tutorial/bm-configuracao.mp4" type="video/mp4">Seu navegador não consegue reproduzir este vídeo.</video></div></section>
     <div class="section-title tutorial-section-title"><div><h2>Script de criação e configuração de BM</h2><p>Confira cada etapa antes de avançar.</p></div><span class="tutorial-count">${steps.length} etapas</span></div>
-    <div class="tutorial-steps">${steps.map(step => `<article class="tutorial-step panel ${step.images ? 'has-images' : ''}"><span class="tutorial-step-number">${step.number}</span><div class="tutorial-step-content"><h3>${step.title}</h3>${step.intro ? `<strong class="tutorial-step-intro">${step.intro}</strong>` : ''}${step.blocks.map(block => `${block.title ? `<strong class="tutorial-step-intro">${block.title}</strong>` : ''}<ul class="tutorial-step-bullets">${block.items.map(item => `<li>${item}</li>`).join('')}</ul>`).join('')}${step.finish ? `<strong class="tutorial-step-finish">${step.finish}</strong>` : ''}</div>${step.images ? `<div class="tutorial-step-images"><figure><img src="${step.images.src}" alt="${step.images.alt}" loading="lazy"><figcaption>${step.images.note}</figcaption></figure></div>` : ''}</article>`).join('')}</div>
-    <section class="tutorial-reference panel"><div><span class="eyebrow">REFERÊNCIA ADICIONAL</span><h2>Consulta pública de CNPJ</h2><p>Imagem ilustrativa enviada pela equipe. Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa.</p></div><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta de dados cadastrais de CNPJ" loading="lazy"></section>
-    <div class="tutorial-footer-note"><strong>Segurança:</strong> não compartilhe senhas nem códigos de confirmação. A aprovação depende da análise oficial da Meta.</div></section>`;
+    <div class="tutorial-steps">${steps.map(step => `<article class="tutorial-step panel ${step.images ? 'has-images' : ''}"><span class="tutorial-step-number">${step.number}</span><div class="tutorial-step-content"><h3>${step.title}</h3>${step.intro ? `<strong class="tutorial-step-intro">${step.intro}</strong>` : ''}${step.blocks.map(block => `${block.title ? `<strong class="tutorial-step-intro">${block.title}</strong>` : ''}<ul class="tutorial-step-bullets">${block.items.map(item => `<li>${item}</li>`).join('')}</ul>`).join('')}${step.finish ? `<strong class="tutorial-step-finish">${step.finish}</strong>` : ''}</div>${step.images ? `<div class="tutorial-step-images"><figure><figcaption><strong>${step.images.title || step.title}</strong><span>${step.images.note}</span></figcaption><button class="tutorial-image-button" type="button" data-tutorial-image="${step.images.src}" data-image-alt="${step.images.alt}" data-image-title="${step.images.title || step.title}" data-image-description="${step.images.note}" aria-label="Ampliar: ${step.images.title || step.title}"><img src="${step.images.src}" alt="${step.images.alt}" loading="lazy"></button></figure></div>` : ''}</article>`).join('')}</div>
+    <section class="tutorial-reference panel"><div class="tutorial-reference-info"><span class="eyebrow">REFERÊNCIA ADICIONAL</span><h2>Consulta pública de CNPJ</h2><p>Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa.</p><div class="tutorial-reference-actions"><a class="primary-btn compact" href="https://metaads-pi.vercel.app/" target="_blank" rel="noopener noreferrer">${svg('arrow', 14)} Abrir consulta de CNPJ</a><button class="soft-btn" type="button" id="show-cnpj-access" aria-expanded="false">${svg('eye', 14)} Exibir dados de acesso</button></div><div class="tutorial-cnpj-access" id="cnpj-access-details" hidden><div><span>E-mail</span><strong id="cnpj-access-email"></strong><button type="button" class="soft-btn" data-copy-cnpj="email">Copiar e-mail</button></div><div><span>Senha</span><strong id="cnpj-access-password"></strong><button type="button" class="soft-btn" data-copy-cnpj="password">Copiar senha</button></div><small>Use este acesso somente no site indicado e mantenha os dados restritos à equipe.</small></div></div><button class="tutorial-image-button tutorial-reference-image" type="button" data-tutorial-image="/tutorial/referencia-consulta-cnpj.png" data-image-alt="Referência visual de consulta de dados cadastrais de CNPJ" data-image-title="Consulta pública de CNPJ" data-image-description="Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa." aria-label="Ampliar referência de consulta pública de CNPJ"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta de dados cadastrais de CNPJ" loading="lazy"></button></section>
+    <div class="tutorial-footer-note"><strong>Segurança:</strong> não compartilhe senhas nem códigos de confirmação. A aprovação depende da análise oficial da Meta.</div><dialog class="tutorial-lightbox" aria-label="Imagem ampliada"><button class="tutorial-lightbox-close" type="button" aria-label="Fechar imagem">${svg('close', 24)}</button><img class="tutorial-lightbox-image" alt=""><div class="tutorial-lightbox-caption"><strong></strong><span></span></div></dialog></section>`;
 }function renderDashboard() {
   const isAdmin = current?.role === 'admin' && !dashboardData?.impersonating;
   if (!isAdmin && !['overview', 'links', 'settings', 'ranking', 'tutorial'].includes(activeView)) activeView = 'overview';
@@ -622,6 +620,44 @@ function tutorialView() {
     tutorialPlayer.previousElementSibling?.setAttribute('hidden', '');
     tutorialPlayer.classList.add('is-ready');
   }, { once: true });
+  const tutorialLightbox = document.querySelector('.tutorial-lightbox');
+  const lightboxImage = tutorialLightbox?.querySelector('.tutorial-lightbox-image');
+  const lightboxCaption = tutorialLightbox?.querySelector('.tutorial-lightbox-caption');
+  document.querySelectorAll('[data-tutorial-image]').forEach(button => button.addEventListener('click', () => {
+    if (!tutorialLightbox || !lightboxImage || typeof tutorialLightbox.showModal !== 'function') return;
+    lightboxImage.src = button.dataset.tutorialImage;
+    lightboxImage.alt = button.dataset.imageAlt || '';
+    lightboxCaption?.querySelector('strong')?.replaceChildren(document.createTextNode(button.dataset.imageTitle || ''));
+    lightboxCaption?.querySelector('span')?.replaceChildren(document.createTextNode(button.dataset.imageDescription || ''));
+    tutorialLightbox.showModal();
+  }));
+  tutorialLightbox?.querySelector('.tutorial-lightbox-close')?.addEventListener('click', () => tutorialLightbox.close());
+  tutorialLightbox?.addEventListener('click', event => { if (event.target === tutorialLightbox) tutorialLightbox.close(); });
+  const cnpjAccessButton = document.querySelector('#show-cnpj-access');
+  const cnpjAccessDetails = document.querySelector('#cnpj-access-details');
+  let cnpjAccess = null;
+  cnpjAccessButton?.addEventListener('click', async () => {
+    if (cnpjAccessDetails && !cnpjAccessDetails.hidden) {
+      cnpjAccessDetails.hidden = true;
+      cnpjAccessButton.setAttribute('aria-expanded', 'false');
+      cnpjAccessButton.innerHTML = `${svg('eye', 14)} Exibir dados de acesso`;
+      return;
+    }
+    try {
+      cnpjAccess ||= await api('/api/tutorial/cnpj-access', { headers: { 'X-CSRF-Token': csrf } });
+      document.querySelector('#cnpj-access-email').textContent = cnpjAccess.email;
+      document.querySelector('#cnpj-access-password').textContent = cnpjAccess.password;
+      cnpjAccessDetails.hidden = false;
+      cnpjAccessButton.setAttribute('aria-expanded', 'true');
+      cnpjAccessButton.innerHTML = `${svg('eye', 14)} Ocultar dados de acesso`;
+    } catch (error) { notify(error.message); }
+  });
+  document.querySelectorAll('[data-copy-cnpj]').forEach(button => button.addEventListener('click', async () => {
+    const value = cnpjAccess?.[button.dataset.copyCnpj];
+    if (!value) return;
+    try { await copyTextToClipboard(value); notify('Dado de acesso copiado.'); }
+    catch { notify('Não foi possível copiar o dado de acesso.'); }
+  }));
   document.querySelectorAll('[data-nav],[data-open-view]').forEach(button => button.addEventListener('click', () => {
     const view = button.dataset.nav || button.dataset.openView;
     if (view === 'security') return notify('Sua sessão está protegida.');

@@ -344,6 +344,12 @@ async function handleApi(req, res, url) {
   if (avatarReadMatch && req.method === 'GET') return handleAvatar(req, res, `/avatars/${avatarReadMatch[1]}.${avatarReadMatch[2]}`);
   if (!user) return json(res, 401, { error: 'Faça login para continuar.' });
   if (!found || !csrfOkay(req, found.session)) return json(res, 403, { error: 'Sessão inválida. Atualize a página.' });
+  if (url.pathname === '/api/tutorial/cnpj-access' && req.method === 'GET') {
+    const email = String(process.env.CNPJ_PORTAL_EMAIL || '').trim();
+    const password = String(process.env.CNPJ_PORTAL_PASSWORD || '');
+    if (!email || !password) return json(res, 503, { error: 'O acesso compartilhado ainda não foi configurado.' }, { 'Cache-Control': 'no-store, private' });
+    return json(res, 200, { email, password }, { 'Cache-Control': 'no-store, private', 'Pragma': 'no-cache' });
+  }
   if (url.pathname === '/api/dashboard' && req.method === 'GET') {
     const active = users.filter(item => item.active).length;
     const recent = [...users].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4).map(cleanUser);

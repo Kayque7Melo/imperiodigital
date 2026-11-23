@@ -30,6 +30,6 @@ O acesso administrativo usa `ADMIN_USERNAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. 
 
 ## Publicação
 
-- Cadastre `DATABASE_URL`, `DIRECT_URL`, `ADMIN_NAME`, `ADMIN_USERNAME`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` nas variáveis privadas do ambiente de hospedagem.
+- Cadastre `SUPABASE_DB_URL`, `ADMIN_NAME`, `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CNPJ_PORTAL_EMAIL` e `CNPJ_PORTAL_PASSWORD` como variáveis privadas no ambiente de hospedagem. As credenciais da consulta CNPJ são entregues somente pela API autenticada, quando o usuário solicita exibi-las.
 - Aplique as migrações antes de colocar o servidor no ar. Não publique `.env`, outros arquivos de ambiente, arquivos de backup ou a pasta `data/`.
 - O backend aplica proteção contra tentativas repetidas de login, cookies HTTP-only, validação CSRF, cabeçalhos de segurança e limites de entrada.

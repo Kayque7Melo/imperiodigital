@@ -1,4 +1,5 @@
-Adicione os vídeos institucionais desta área como arquivos estáticos do projeto.
-Nome recomendado: bm-configuracao.mp4
-Os arquivos nesta pasta são servidos como mídia pública e não são gravados no banco de dados.
-Não coloque credenciais, códigos de acesso ou documentos pessoais aqui.
+Imagens fixas do Tutorial da equipe, servidas diretamente pelo projeto e fora do banco de dados.
+
+Adicione o vídeo institucional como `bm-configuracao.mp4` nesta pasta. Ele será exibido automaticamente no player da aba Tutoriais.
+
+Use documentos e dados legítimos da empresa. Não adicione senhas, códigos de confirmação ou documentos pessoais a esta pasta.

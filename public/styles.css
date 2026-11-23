@@ -710,6 +710,8 @@ dialog.password-reset-dialog .modal-actions { display: flex; justify-content: fl
   background: rgba(75,158,255,.04); margin: 12px 0 18px;
 }
 .submit-link-title { display: flex; align-items: center; gap: 9px; margin-bottom: 12px }
+.submit-link-title-copy { display: flex; align-items: center; gap: 9px; min-width: 0 }
+.portfolio-cta { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; white-space: nowrap; text-decoration: none }
 .submit-link-title strong, .submit-link-title small { display: block }
 .submit-link-title strong { font-size: 12px }
 .submit-link-title small  { font-size: 10px; color: var(--text3); margin-top: 3px }
@@ -1067,6 +1069,8 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
   .link-summary-card strong { font-size: 16px }
   .link-summary-card em     { font-size: 8px }
   .submit-link-form { padding: 13px }
+  .submit-link-title { flex-wrap: wrap }
+  .portfolio-cta { margin-left: auto }
   .link-form-fields { grid-template-columns: 1fr }
   .link-form-fields .primary-btn { width: 100% }
   .link-card-top  { align-items: flex-start }
@@ -1100,6 +1104,7 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
 .tutorial-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; padding: 8px 0 4px }
 .tutorial-hero h1 { margin: 9px 0 8px; font: 800 clamp(27px,3vw,38px)/1.12 var(--display); letter-spacing: -.045em }
 .tutorial-hero p,.tutorial-video-copy p { max-width: 680px; margin: 0; color: var(--text2); line-height: 1.7 }
+.tutorial-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px }
 .tutorial-official-link { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; text-decoration: none }
 .tutorial-notice { display: flex; align-items: flex-start; gap: 13px; padding: 17px 19px; border: 1px solid rgba(75,158,255,.24); border-radius: var(--r-md); background: linear-gradient(120deg,rgba(75,158,255,.11),rgba(75,158,255,.035)); color: var(--blue2) }
 .tutorial-notice > i { flex: 0 0 auto; margin-top: 2px }
@@ -1120,11 +1125,26 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
 .tutorial-count { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--text2); font-size: 11px }
 .tutorial-steps { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px }
 .tutorial-step { display: flex; align-items: flex-start; gap: 14px; padding: 18px; min-height: 160px }
+.tutorial-step.has-images { display: grid; grid-template-columns: 38px minmax(0,1fr); align-content: start }
 .tutorial-step-number { flex: 0 0 38px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; color: var(--blue2); background: rgba(75,158,255,.12); border: 1px solid rgba(75,158,255,.2); font: 800 12px var(--display) }
 .tutorial-step-content h3 { margin: 2px 0 7px; font: 700 14px/1.35 var(--display) }
 .tutorial-step-content p { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.68 }
+.tutorial-step-intro { display: block; margin: 12px 0 0; color: var(--text); font-size: 11px }
+.tutorial-step-bullets { display: grid; gap: 7px; margin: 8px 0 0; padding-left: 17px; color: var(--text2); font-size: 11px; line-height: 1.6 }
+.tutorial-step-bullets li::marker { color: var(--blue2) }
+.tutorial-step-finish { display: block; margin-top: 12px; color: var(--blue2); font-size: 11px }
+.tutorial-step-images { grid-column: 2; display: grid; grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: 12px; margin-top: 14px }
+.tutorial-step-images figure { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface2) }
+.tutorial-step-images img { display: block; width: 100%; height: auto; max-height: 540px; object-fit: contain; background: #fff }
+.tutorial-step-images figcaption { padding: 9px 10px; color: var(--text2); font-size: 10px; line-height: 1.5 }
 .tutorial-text-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; color: var(--blue2); font-size: 11px; font-weight: 700; text-decoration: none }
 .tutorial-text-link:hover { color: #fff }
+.tutorial-checklist { display: grid; grid-template-columns: minmax(0,.8fr) minmax(260px,1fr); gap: 16px 24px; padding: 20px }
+.tutorial-checklist h2 { margin: 7px 0 0; font: 700 18px/1.3 var(--display) }
+.tutorial-checklist ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none }
+.tutorial-checklist li { display: flex; align-items: flex-start; gap: 9px; color: var(--text2); font-size: 12px; line-height: 1.5 }
+.tutorial-checklist li > i { flex: 0 0 auto; color: var(--blue2) }
+.tutorial-finish { grid-column: 1/-1; padding-top: 14px; border-top: 1px solid var(--border); color: var(--blue2); font: 700 12px var(--display) }
 .tutorial-footer-note { padding: 15px 17px; border-left: 2px solid var(--blue); border-radius: 0 var(--r-sm) var(--r-sm) 0; color: var(--text2); background: var(--surface2); font-size: 12px; line-height: 1.6 }
 .tutorial-footer-note strong { color: var(--text) }
 @media (max-width: 780px) {
@@ -1132,6 +1152,7 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
   .tutorial-video { grid-template-columns: 1fr; gap: 16px }
   .tutorial-steps { grid-template-columns: 1fr }
   .tutorial-step { min-height: 0 }
+  .tutorial-checklist { grid-template-columns: 1fr }
 }
 
 /* ── Reduced motion ─────────────────────────────────────────────────── */

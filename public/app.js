@@ -12,6 +12,8 @@ let selectedLinkBm = 'all';
 let showLinkArchive = false;
 let rankingPeriod = 'daily';
 let accessRows = [];
+let recordsData = [];
+let whatsappData = [];
 let accessUserFilter = 'all';
 let activityUserFilter = 'all';
 let linksBalanceCents = 0;
@@ -37,6 +39,7 @@ const ri = {
   close: 'ri-close-line', eye: 'ri-eye-line', copy: 'ri-file-copy-line', book: 'ri-book-open-line', play: 'ri-play-circle-line',
   lock: 'ri-lock-2-line', wave: 'ri-pulse-line', menu: 'ri-menu-line',
   people: 'ri-group-2-line', money: 'ri-money-dollar-circle-line', wallet: 'ri-wallet-3-line',
+  whatsapp: 'ri-whatsapp-line',
 };
 const svg = (name, size = 17) => `<i class="ic ${ri[name] || ri.spark}" style="font-size:${size}px" aria-hidden="true"></i>`;
 const initials = name => String(name || '?').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase();
@@ -408,6 +411,11 @@ async function openDashboard() {
     await fetchLinks();
     await fetchInsights();
     await refreshNotifications(false);
+    // Carrega dados das abas admin
+    if (dashboardData.admin && !dashboardData.impersonating) {
+      try { const r = await api('/api/records', { headers: { 'X-CSRF-Token': csrf } }); recordsData = r.records || []; } catch {}
+      try { const w = await api('/api/whatsapp', { headers: { 'X-CSRF-Token': csrf } }); whatsappData = w.numbers || []; } catch {}
+    }
     if (notificationsTimer) clearInterval(notificationsTimer);
     notificationsTimer = setInterval(() => refreshNotifications(true), 20000);
     renderDashboard();
@@ -661,12 +669,183 @@ function tutorialView() {
     </article>`).join('')}</div>
     <section class="tutorial-reference panel"><div class="tutorial-reference-info"><span class="eyebrow">REFERÊNCIA ADICIONAL</span><h2>Consulta pública de CNPJ</h2><p>Confira os dados cadastrais de qualquer empresa diretamente. O acesso é feito com sua conta da Império Digital — sem precisar digitar usuário ou senha.</p><div class="tutorial-reference-actions"><button class="primary-btn compact" type="button" id="open-cnpj-portal">${svg('arrow', 14)} Acessar Consulta de CNPJ</button></div><small class="tutorial-cnpj-sso-note">Você será redirecionado automaticamente. Sua sessão fica salva neste navegador até você clicar em Sair.</small></div><button class="tutorial-image-button tutorial-reference-image" type="button" data-tutorial-image="/tutorial/referencia-consulta-cnpj.png" data-image-alt="Referência visual de consulta de dados cadastrais de CNPJ" data-image-title="Consulta pública de CNPJ" data-image-description="Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa." aria-label="Ampliar referência de consulta pública de CNPJ"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta de dados cadastrais de CNPJ" loading="lazy"></button></section>
     <div class="tutorial-footer-note"><strong>Segurança:</strong> não compartilhe senhas nem códigos de confirmação. A aprovação depende da análise oficial da Meta.</div><dialog class="tutorial-lightbox" aria-label="Imagem ampliada"><button class="tutorial-lightbox-close" type="button" aria-label="Fechar imagem">${svg('close', 24)}</button><img class="tutorial-lightbox-image" alt=""><div class="tutorial-lightbox-caption"><strong></strong><span></span></div></dialog></section>`;
-}function renderDashboard() {
+}
+
+/* ═══════════════════════════════════════════
+   REGISTROS
+═══════════════════════════════════════════ */
+const RECORD_TYPES = {
+  whatsapp:  { label: 'WhatsApp',   color: '#25D366', bg: 'rgba(37,211,102,.12)',  icon: 'whatsapp' },
+  sms24:     { label: 'SMS24',      color: '#FF6B35', bg: 'rgba(255,107,53,.12)',  icon: 'sms'      },
+  adspower:  { label: 'Ads Power',  color: '#6366F1', bg: 'rgba(99,102,241,.12)',  icon: 'ads'      },
+  payment:   { label: 'Pagamento',  color: '#F9C74F', bg: 'rgba(249,199,79,.12)',  icon: 'money'    },
+  revenue:   { label: 'Lucro',      color: '#2DD4BF', bg: 'rgba(45,212,191,.12)',  icon: 'chart'    },
+  other:     { label: 'Outro',      color: '#94A3B8', bg: 'rgba(148,163,184,.12)', icon: 'spark'    },
+};
+
+function recordTypeSvg(type, size = 20) {
+  const icons = {
+    whatsapp: `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#25D366"/><path fill="#fff" d="M22.9 9.1A9.7 9.7 0 0 0 7.1 20.3L6 26l5.8-1.5a9.7 9.7 0 0 0 11.1-15.4zm-6.9 14.9a8 8 0 0 1-4.1-1.1l-.3-.2-3.4.9.9-3.3-.2-.3a8 8 0 1 1 7.1 4zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5l-1.1-2.7c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.6s1.1 3 1.3 3.2c.2.2 2.2 3.4 5.4 4.7.8.3 1.3.5 1.8.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4 0-.1-.2-.2-.4-.3z"/></svg>`,
+    sms:      `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#FF6B35"/><path fill="#fff" d="M8 10h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-5l-3 3-3-3H8a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 4h12v1.5H10V14zm0 3h8v1.5h-8V17z"/></svg>`,
+    ads:      `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#6366F1"/><path fill="#fff" d="M22 10H10a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-1 2-5 3.5L11 12h10zm1 8H10v-6.4l6 4.2 6-4.2V20z"/></svg>`,
+    money:    `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#F9C74F"/><path fill="#fff" d="M16 7a9 9 0 1 0 0 18A9 9 0 0 0 16 7zm.8 13.5v1h-1.6v-1.1c-1.3-.3-2.2-1.2-2.2-2.5h1.7c0 .7.5 1.1 1.2 1.1.8 0 1.2-.4 1.2-1 0-.6-.4-.9-1.4-1.2-1.4-.3-2.5-.9-2.5-2.3 0-1.1.8-2 2-2.3V11h1.6v1.2c1.2.3 2 1.1 2 2.4h-1.7c0-.7-.4-1.1-1.1-1.1-.7 0-1.1.3-1.1.9s.4.9 1.5 1.2c1.4.4 2.5 1 2.5 2.4 0 1.1-.8 2-2.1 2.5z"/></svg>`,
+    chart:    `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#2DD4BF"/><path fill="#fff" stroke="#fff" stroke-width=".3" d="M9 22V14h3v8H9zm5-10h3v10h-3V12zm5-4h3v14h-3V8z"/></svg>`,
+    spark:    `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#64748B"/><path fill="#fff" d="M16 7l1.8 5.4L23 14l-5.2 2-1.8 5.6-1.8-5.6L9 14l5.2-2L16 7z"/></svg>`,
+  };
+  return icons[type] || icons.spark;
+}
+
+function recordsView() {
+  const totalGasto   = recordsData.filter(r => ['whatsapp','sms24','adspower','payment'].includes(r.type) && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
+  const totalLucro   = recordsData.filter(r => r.type === 'revenue' && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
+  const saldo        = totalLucro - totalGasto;
+
+  const typeOpts = Object.entries(RECORD_TYPES).map(([v, t]) => `<option value="${v}">${t.label}</option>`).join('');
+
+  return `<section class="admin-section records-page">
+    <div class="section-title">
+      <div><div class="eyebrow">ADMINISTRAÇÃO</div><h2>Registros</h2><p>Controle de investimentos, gastos, compras e lucros da operação.</p></div>
+      <div class="records-summary">
+        <span class="rec-sum-item gasto"><span class="rec-sum-label">Gasto</span><strong>${money(totalGasto)}</strong></span>
+        <span class="rec-sum-sep">·</span>
+        <span class="rec-sum-item lucro"><span class="rec-sum-label">Lucro</span><strong>${money(totalLucro)}</strong></span>
+        <span class="rec-sum-sep">·</span>
+        <span class="rec-sum-item saldo ${saldo >= 0 ? 'pos' : 'neg'}"><span class="rec-sum-label">Saldo</span><strong>${money(saldo)}</strong></span>
+      </div>
+    </div>
+
+    <article class="panel records-form-panel">
+      <div class="panel-head"><h3>${svg('plus', 14)} Novo registro</h3></div>
+      <form id="record-form" class="records-form">
+        <div class="records-type-grid" id="records-type-grid">
+          ${Object.entries(RECORD_TYPES).map(([v, t]) => `
+            <label class="record-type-btn" data-type="${v}">
+              <input type="radio" name="rec-type" value="${v}" ${v === 'whatsapp' ? 'checked' : ''} required>
+              <span class="rtb-icon">${recordTypeSvg(t.icon, 22)}</span>
+              <span>${t.label}</span>
+            </label>`).join('')}
+        </div>
+        <div class="records-form-fields">
+          <label class="modal-field"><span>Descrição <span class="req-mark">*</span></span><input name="description" placeholder="Ex.: Recarga 100 créditos SMS" required maxlength="300"></label>
+          <label class="modal-field"><span>Categoria / produto</span><input name="category" placeholder="Ex.: Recarga, Conta, Assinatura…" maxlength="80"></label>
+          <label class="modal-field"><span>Número (WhatsApp/SMS)</span><input name="phone" placeholder="5511999999999" maxlength="30"></label>
+          <label class="modal-field"><span>Valor (R$)</span><span class="currency-input"><b>R$</b><input name="amount" type="number" min="0" step="0.01" placeholder="0,00"></span></label>
+        </div>
+        <div class="records-form-actions">
+          <div class="login-error" id="record-form-error"></div>
+          <button class="primary-btn" type="submit" id="record-submit">${svg('plus', 14)} Registrar</button>
+        </div>
+      </form>
+    </article>
+
+    <div class="records-list" id="records-list">
+      ${recordsData.length ? recordsData.map(r => recordCardHtml(r)).join('') : `<div class="records-empty"><strong>Nenhum registro ainda</strong><p>Use o formulário acima para registrar um gasto, compra ou lucro.</p></div>`}
+    </div>
+  </section>`;
+}
+
+function recordCardHtml(r) {
+  const t = RECORD_TYPES[r.type] || RECORD_TYPES.other;
+  const isRevenue = r.type === 'revenue';
+  return `<article class="record-card panel" data-record-id="${escapeHtml(r.id)}">
+    <div class="record-card-left">
+      <span class="record-type-icon" style="background:${t.bg}">${recordTypeSvg(t.icon, 24)}</span>
+    </div>
+    <div class="record-card-body">
+      <div class="record-card-top">
+        <span class="record-type-badge" style="color:${t.color};background:${t.bg}">${t.label}</span>
+        ${r.category ? `<span class="record-category">${escapeHtml(r.category)}</span>` : ''}
+        ${r.phone ? `<span class="record-phone">${svg('link', 11)} +${escapeHtml(r.phone)}</span>` : ''}
+      </div>
+      <p class="record-description">${escapeHtml(r.description || '—')}</p>
+      <div class="record-card-footer">
+        <span class="record-meta">${escapeHtml(r.createdByName || '')} · ${dateFmt(r.createdAt)}</span>
+        ${r.amountCents !== null && r.amountCents !== undefined ? `<strong class="record-amount ${isRevenue ? 'revenue' : 'expense'}">${isRevenue ? '+' : '-'} ${money(r.amountCents)}</strong>` : ''}
+      </div>
+    </div>
+    <button class="icon-btn record-delete-btn" title="Excluir registro" data-delete-record="${escapeHtml(r.id)}">${svg('x', 14)}</button>
+  </article>`;
+}
+
+/* ═══════════════════════════════════════════
+   WHATSAPP MANAGER
+═══════════════════════════════════════════ */
+function whatsappView() {
+  const team = members.filter(m => m.role !== 'admin');
+  return `<section class="admin-section whatsapp-page">
+    <div class="section-title">
+      <div><div class="eyebrow">ADMINISTRAÇÃO</div><h2>WhatsApp</h2><p>Números comprados, grupos e atribuição por usuário.</p></div>
+      <button class="primary-btn compact" id="wa-add-btn">${svg('plus', 14)} Adicionar número</button>
+    </div>
+
+    <div class="wa-numbers-list" id="wa-numbers-list">
+      ${whatsappData.length ? whatsappData.map(n => waNumberCardHtml(n, team)).join('') : `<div class="records-empty"><strong>Nenhum número cadastrado</strong><p>Clique em "Adicionar número" para registrar um WhatsApp comprado.</p></div>`}
+    </div>
+  </section>
+
+  <div id="wa-add-modal" hidden>
+    <div class="modal-backdrop" id="wa-modal-backdrop">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="wa-modal-title">
+        <div class="modal-head">
+          <div><div class="eyebrow">WHATSAPP</div><h2 id="wa-modal-title">Adicionar número</h2><p>Informe o número e o grupo ao qual pertence.</p></div>
+          <button class="icon-btn" id="wa-modal-close" aria-label="Fechar">${svg('close')}</button>
+        </div>
+        <form id="wa-add-form">
+          <div class="modal-field"><label for="wa-phone">Número (somente dígitos)</label><input id="wa-phone" name="phone" placeholder="5511999999999" required maxlength="20" inputmode="numeric"></div>
+          <div class="modal-field"><label for="wa-label">Nome / identificação</label><input id="wa-label" name="label" placeholder="Ex.: Conta principal" maxlength="80"></div>
+          <div class="modal-field"><label for="wa-group">Grupo</label><input id="wa-group" name="groupName" placeholder="Ex.: Grupo A, Equipe Norte…" maxlength="80"></div>
+          <div class="login-error" id="wa-modal-error"></div>
+          <div class="modal-actions">
+            <button class="soft-btn" type="button" id="wa-modal-cancel">Cancelar</button>
+            <button class="primary-btn compact" type="submit" id="wa-modal-submit">${svg('plus', 14)} Adicionar</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>`;
+}
+
+function waNumberCardHtml(n, team) {
+  const assignedUsers = (n.assignedUsers || []).map(id => team.find(m => m.id === id)).filter(Boolean);
+  const unassigned = team.filter(m => !(n.assignedUsers || []).includes(m.id));
+  return `<article class="panel wa-number-card" data-wa-id="${escapeHtml(n.id)}">
+    <div class="wa-card-header">
+      <span class="wa-icon-wrap">${recordTypeSvg('whatsapp', 28)}</span>
+      <div class="wa-card-info">
+        <strong class="wa-phone">+${escapeHtml(n.phone)}</strong>
+        ${n.label ? `<span class="wa-label">${escapeHtml(n.label)}</span>` : ''}
+        ${n.groupName ? `<span class="wa-group-badge">${svg('users', 11)} ${escapeHtml(n.groupName)}</span>` : ''}
+      </div>
+      <span class="wa-card-date">${dateFmt(n.createdAt)}</span>
+      <button class="icon-btn danger-icon-btn" title="Remover número" data-wa-delete="${escapeHtml(n.id)}">${svg('x', 14)}</button>
+    </div>
+    <div class="wa-assignments">
+      <div class="wa-assign-label">${svg('users', 13)} Usuários com acesso</div>
+      <div class="wa-users-list">
+        ${assignedUsers.length ? assignedUsers.map(m => `
+          <span class="wa-user-chip" data-wa-user-chip="${escapeHtml(n.id)}-${escapeHtml(m.id)}">
+            ${avatarMarkup(m, 'avatar wa-chip-avatar')}
+            <span>${escapeHtml(m.name.split(' ')[0])}</span>
+            <button class="wa-chip-remove" data-wa-remove="${escapeHtml(n.id)}" data-uid="${escapeHtml(m.id)}" title="Remover acesso" aria-label="Remover ${escapeHtml(m.name)}">${svg('x', 10)}</button>
+          </span>`).join('') : '<span class="wa-no-users">Nenhum usuário atribuído</span>'}
+        ${unassigned.length ? `
+          <div class="wa-assign-select-wrap">
+            <select class="search-input wa-assign-select" data-wa-assign-select="${escapeHtml(n.id)}" aria-label="Atribuir usuário">
+              <option value="">+ Atribuir usuário…</option>
+              ${unassigned.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join('')}
+            </select>
+          </div>` : ''}
+      </div>
+    </div>
+  </article>`;
+}
+
+function renderDashboard() {
   const isAdmin = current?.role === 'admin' && !dashboardData?.impersonating;
   if (!isAdmin && !['overview', 'links', 'settings', 'ranking', 'tutorial'].includes(activeView)) activeView = 'overview';
   const welcomeName = escapeHtml(current?.name?.split(' ')[0] || 'equipe');
   const pendingBadge = dashboardData?.pendingCount ? String(dashboardData.pendingCount) : '';
-  const pageTitles = { overview: 'Visão geral', 'create-account': 'Criar conta', accounts: 'Contas registradas', rates: 'Valores por perfil', links: isAdmin ? 'Gestão de links' : 'Meus links', ranking: 'Ranking', access: 'Histórico de acessos', tutorial: 'Tutoriais', settings: 'Configurações' };
+  const pageTitles = { overview: 'Visão geral', 'create-account': 'Criar conta', accounts: 'Contas registradas', rates: 'Valores por perfil', links: isAdmin ? 'Gestão de links' : 'Meus links', ranking: 'Ranking', access: 'Histórico de acessos', tutorial: 'Tutoriais', records: 'Registros', whatsapp: 'WhatsApp', settings: 'Configurações' };
   const page = activeView === 'overview' ? overviewView(isAdmin, welcomeName)
     : activeView === 'create-account' && isAdmin ? createAccountView()
     : activeView === 'accounts' && isAdmin ? registeredAccountsView()
@@ -675,10 +854,12 @@ function tutorialView() {
     : activeView === 'ranking' ? rankingView()
     : activeView === 'access' && isAdmin ? accessView()
     : activeView === 'tutorial' ? tutorialView()
+    : activeView === 'records' && isAdmin ? recordsView()
+    : activeView === 'whatsapp' && isAdmin ? whatsappView()
     : activeView === 'settings' ? settingsView()
     : overviewView(isAdmin, welcomeName);
   const navigation = isAdmin
-    ? `${navItem('overview', 'Métricas', 'grid')}${navItem('create-account', 'Criar conta', 'plus')}${navItem('accounts', 'Gestão de contas', 'users', String(members.filter(member => member.role !== 'admin').length))}${navItem('rates', 'Valores dos links', 'spark')}${navItem('links', 'Gestão de links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('tutorial', 'Tutoriais', 'book')}${navItem('access', 'Histórico de acessos', 'shield')}${navItem('settings', 'Configurações', 'settings')}`
+    ? `${navItem('overview', 'Métricas', 'grid')}${navItem('create-account', 'Criar conta', 'plus')}${navItem('accounts', 'Gestão de contas', 'users', String(members.filter(member => member.role !== 'admin').length))}${navItem('rates', 'Valores dos links', 'spark')}${navItem('links', 'Gestão de links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('records', 'Registros', 'book')}${navItem('whatsapp', 'WhatsApp', 'whatsapp')}${navItem('tutorial', 'Tutoriais', 'play')}${navItem('access', 'Histórico de acessos', 'shield')}${navItem('settings', 'Configurações', 'settings')}`
     : `${navItem('overview', 'Visão geral', 'grid')}${navItem('links', 'Meus links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('tutorial', 'Tutoriais', 'book')}${navItem('settings', 'Configurações', 'settings')}`;
   app.innerHTML = `<div class="dashboard">${dashboardData?.impersonating ? `<div class="impersonate-banner" style="grid-column:1/-1"><span>Você está visualizando o espaço de <strong>${escapeHtml(current.name)}</strong>.</span><button class="soft-btn" id="return-admin">${svg('arrow', 13)} Voltar à administração</button></div>` : ''}<aside class="sidebar"><div class="sidebar-brand">${brand()}</div><div class="side-label">Espaço de trabalho</div><nav class="nav">${navigation}</nav><div class="sidebar-bottom"><div class="workspace-card"><div class="workspace-card-head"><span class="workspace-icon">${svg('wave', 15)}</span><strong>Operação organizada</strong></div><p>Links, equipe e métricas da Império Digital em um só lugar.</p></div><div class="side-profile">${avatarMarkup(current)}<span class="profile-copy"><strong>${escapeHtml(current?.name)}</strong><small>${isAdmin ? 'Administrador' : 'Membro da equipe'}</small></span><button class="icon-btn" title="Sair da conta" id="logout">${svg('logout', 15)}</button></div></div></aside><main class="main"><header class="topbar"><div class="breadcrumb">IMPÉRIO DIGITAL&nbsp; / &nbsp;<b>${pageTitles[activeView] || 'Visão geral'}</b></div><div class="top-actions"><span class="top-time">${new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(new Date())}</span><div class="notification-wrap"><button class="notification-toggle" id="notification-toggle" title="Notificações">${svg('bell', 17)}<span id="notification-count" class="notification-count" ${unreadNotifications?'':'hidden'}>${unreadNotifications>9?'9+':unreadNotifications}</span></button><div class="notification-panel" id="notification-panel">${notificationMarkup()}</div></div></div></header><div class="page">${page}</div></main></div>`;
   document.querySelector('#logout')?.addEventListener('click', logout);
@@ -789,6 +970,107 @@ function tutorialView() {
   document.querySelector('#copy-login')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(current.username); notify('Login copiado.'); } catch { notify(`Seu login é ${current.username}`); } });
   document.querySelector('#refresh-panel')?.addEventListener('click', async event => { event.preventDefault(); await refreshDashboardPreservingScroll(); notify('Painel atualizado.'); });
   if (activeView === 'accounts') bindUserActions();
+  // ── Registros bindings ──────────────────────────────────────────────────
+  document.querySelector('#record-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const btn = document.querySelector('#record-submit');
+    const errorEl = document.querySelector('#record-form-error');
+    const fields = new FormData(form);
+    const type = document.querySelector('#records-type-grid input[name="rec-type"]:checked')?.value || 'other';
+    const amount = fields.get('amount');
+    const amountCents = amount ? Math.round(Number(amount) * 100) : null;
+    btn.disabled = true; errorEl.classList.remove('show');
+    try {
+      const record = await api('/api/records', { method: 'POST', body: JSON.stringify({ type, description: fields.get('description'), category: fields.get('category'), phone: fields.get('phone'), amountCents }) });
+      recordsData.unshift(record.record);
+      const list = document.querySelector('#records-list');
+      if (list) { if (list.querySelector('.records-empty')) list.innerHTML = ''; list.insertAdjacentHTML('afterbegin', recordCardHtml(record.record)); }
+      form.reset();
+      notify('Registro salvo.');
+    } catch (err) { errorEl.textContent = err.message; errorEl.classList.add('show'); }
+    finally { btn.disabled = false; }
+  });
+  document.querySelectorAll('.record-type-btn').forEach(label => label.addEventListener('click', () => {
+    document.querySelectorAll('.record-type-btn').forEach(l => l.classList.remove('active'));
+    label.classList.add('active');
+  }));
+  // Set initial active type
+  document.querySelector('.record-type-btn')?.classList.add('active');
+  document.querySelector('#records-list')?.addEventListener('click', async event => {
+    const btn = event.target.closest('[data-delete-record]');
+    if (!btn) return;
+    if (!confirm('Excluir este registro? Esta ação não pode ser desfeita.')) return;
+    const id = btn.dataset.deleteRecord;
+    try {
+      await api(`/api/records/${encodeURIComponent(id)}`, { method: 'DELETE', body: '{}' });
+      recordsData = recordsData.filter(r => r.id !== id);
+      btn.closest('.record-card')?.remove();
+      if (!document.querySelector('.record-card')) document.querySelector('#records-list').innerHTML = `<div class="records-empty"><strong>Nenhum registro ainda</strong><p>Use o formulário acima para registrar um gasto, compra ou lucro.</p></div>`;
+      notify('Registro excluído.');
+    } catch (err) { notify(err.message); }
+  });
+  // ── WhatsApp bindings ───────────────────────────────────────────────────
+  document.querySelector('#wa-add-btn')?.addEventListener('click', () => {
+    document.querySelector('#wa-add-modal').hidden = false;
+    document.querySelector('#wa-phone')?.focus();
+  });
+  const closeWaModal = () => { document.querySelector('#wa-add-modal').hidden = true; document.querySelector('#wa-add-form')?.reset(); document.querySelector('#wa-modal-error')?.classList.remove('show'); };
+  document.querySelector('#wa-modal-close')?.addEventListener('click', closeWaModal);
+  document.querySelector('#wa-modal-cancel')?.addEventListener('click', closeWaModal);
+  document.querySelector('#wa-modal-backdrop')?.addEventListener('click', event => { if (event.target === event.currentTarget) closeWaModal(); });
+  document.querySelector('#wa-add-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const btn = document.querySelector('#wa-modal-submit');
+    const errEl = document.querySelector('#wa-modal-error');
+    btn.disabled = true; errEl.classList.remove('show');
+    try {
+      const result = await api('/api/whatsapp', { method: 'POST', body: JSON.stringify({ phone: fields.get('phone'), label: fields.get('label'), groupName: fields.get('groupName') }) });
+      whatsappData.unshift(result.number);
+      closeWaModal();
+      await refreshDashboardPreservingScroll();
+      notify('Número adicionado.');
+    } catch (err) { errEl.textContent = err.message; errEl.classList.add('show'); }
+    finally { btn.disabled = false; }
+  });
+  document.querySelector('#wa-numbers-list')?.addEventListener('click', async event => {
+    // Delete number
+    const delBtn = event.target.closest('[data-wa-delete]');
+    if (delBtn) {
+      if (!confirm('Remover este número? Esta ação não pode ser desfeita.')) return;
+      const id = delBtn.dataset.waDelete;
+      try { await api(`/api/whatsapp/${encodeURIComponent(id)}`, { method: 'DELETE', body: '{}' }); whatsappData = whatsappData.filter(n => n.id !== id); await refreshDashboardPreservingScroll(); notify('Número removido.'); }
+      catch (err) { notify(err.message); }
+      return;
+    }
+    // Remove user assignment
+    const removeBtn = event.target.closest('[data-wa-remove]');
+    if (removeBtn) {
+      const waId = removeBtn.dataset.waRemove;
+      const uid = removeBtn.dataset.uid;
+      try {
+        await api(`/api/whatsapp/${encodeURIComponent(waId)}/remove`, { method: 'POST', body: JSON.stringify({ userId: uid }) });
+        const num = whatsappData.find(n => n.id === waId);
+        if (num) num.assignedUsers = (num.assignedUsers || []).filter(id => id !== uid);
+        await refreshDashboardPreservingScroll();
+        notify('Acesso removido e usuário notificado.');
+      } catch (err) { notify(err.message); }
+    }
+  });
+  document.querySelectorAll('[data-wa-assign-select]').forEach(sel => sel.addEventListener('change', async () => {
+    const waId = sel.dataset.waAssignSelect;
+    const uid = sel.value;
+    if (!uid) return;
+    sel.value = '';
+    try {
+      await api(`/api/whatsapp/${encodeURIComponent(waId)}/assign`, { method: 'POST', body: JSON.stringify({ userId: uid }) });
+      const num = whatsappData.find(n => n.id === waId);
+      if (num && !num.assignedUsers.includes(uid)) num.assignedUsers.push(uid);
+      await refreshDashboardPreservingScroll();
+      notify('Usuário atribuído e notificado.');
+    } catch (err) { notify(err.message); }
+  }));
 }
 document.addEventListener('click', event => {
   if (event.target.closest?.('#retry-open')) { location.reload(); return; }

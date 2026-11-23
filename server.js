@@ -17,6 +17,8 @@ const PAYOUTS_FILE = path.join(DATA_DIR, 'payouts.json');
 const LINK_FINGERPRINTS_FILE = path.join(DATA_DIR, 'link-fingerprints.json');
 const ACTIVITY_FILE = path.join(DATA_DIR, 'link-activity.json');
 const ACCESS_FILE = path.join(DATA_DIR, 'access-history.json');
+const RECORDS_FILE = path.join(DATA_DIR, 'records.json');
+const WHATSAPP_FILE = path.join(DATA_DIR, 'whatsapp.json');
 const sessions = new Map();
 const loginAttempts = new Map();
 
@@ -119,6 +121,8 @@ let payouts = loadList(PAYOUTS_FILE);
 let linkFingerprints = new Set(loadList(LINK_FINGERPRINTS_FILE));
 let linkActivity = loadList(ACTIVITY_FILE);
 let accessHistory = loadList(ACCESS_FILE);
+let records = loadList(RECORDS_FILE);
+let whatsappNumbers = loadList(WHATSAPP_FILE);
 let fingerprintsUpdated = false;
 for (const link of links) {
   try {
@@ -749,6 +753,108 @@ async function handleApi(req, res, url) {
     for (const [sid, session] of sessions) if (session.userId === removed.id) sessions.delete(sid);
     for (const [sid, session] of sessions) if (session.originalUserId === removed.id) sessions.delete(sid);
     return json(res, 200, { ok: true });
+  }
+  // ── REGISTROS ──────────────────────────────────────────────────────────────
+  if (url.pathname === '/api/records' && req.method === 'GET') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode ver registros.' });
+    return json(res, 200, { records: records.slice(0, 500) });
+  }
+  if (url.pathname === '/api/records' && req.method === 'POST') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode criar registros.' });
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: e.message }); }
+    const VALID_TYPES = ['whatsapp', 'sms24', 'adspower', 'payment', 'revenue', 'other'];
+    const type = String(body.type || '').toLowerCase();
+    if (!VALID_TYPES.includes(type)) return json(res, 400, { error: 'Tipo de registro inválido.' });
+    const description = String(body.description || '').trim().slice(0, 300);
+    const amountCents = body.amountCents !== undefined ? Number(body.amountCents) : null;
+    if (amountCents !== null && (!Number.isFinite(amountCents) || amountCents < 0)) return json(res, 400, { error: 'Valor inválido.' });
+    const phone = String(body.phone || '').trim().slice(0, 30);
+    const category = String(body.category || '').trim().slice(0, 80);
+    const record = { id: crypto.randomUUID(), type, category, description, phone, amountCents, createdBy: user.id, createdByName: user.name, createdAt: new Date().toISOString() };
+    records.unshift(record);
+    if (records.length > 2000) records.length = 2000;
+    saveList(RECORDS_FILE, records);
+    // Notifica todos os admins
+    for (const admin of users.filter(u => u.role === 'admin' && u.active)) {
+      addNotification(admin.id, 'new-record', `Novo registro: ${category || type}`, `${user.name} registrou: ${description || category || type}${amountCents !== null ? ' · ' + moneyLabel(amountCents) : ''}`, { recordId: record.id });
+    }
+    return json(res, 201, { record });
+  }
+  const recordId = url.pathname.match(/^\/api\/records\/([^/]+)$/)?.[1];
+  if (recordId && req.method === 'DELETE') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode excluir registros.' });
+    const idx = records.findIndex(r => r.id === recordId);
+    if (idx < 0) return json(res, 404, { error: 'Registro não encontrado.' });
+    records.splice(idx, 1);
+    saveList(RECORDS_FILE, records);
+    return json(res, 200, { ok: true });
+  }
+  // ── WHATSAPP NUMBERS ───────────────────────────────────────────────────────
+  if (url.pathname === '/api/whatsapp' && req.method === 'GET') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode ver números.' });
+    return json(res, 200, { numbers: whatsappNumbers });
+  }
+  if (url.pathname === '/api/whatsapp' && req.method === 'POST') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode adicionar números.' });
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: e.message }); }
+    const phone = String(body.phone || '').trim().replace(/\D/g, '').slice(0, 20);
+    if (!phone || phone.length < 8) return json(res, 400, { error: 'Informe um número válido.' });
+    if (whatsappNumbers.some(n => n.phone === phone)) return json(res, 409, { error: 'Este número já está cadastrado.' });
+    const label = String(body.label || '').trim().slice(0, 80);
+    const groupName = String(body.groupName || '').trim().slice(0, 80);
+    const number = { id: crypto.randomUUID(), phone, label, groupName, assignedUsers: [], createdBy: user.id, createdAt: new Date().toISOString() };
+    whatsappNumbers.unshift(number);
+    saveList(WHATSAPP_FILE, whatsappNumbers);
+    for (const admin of users.filter(u => u.role === 'admin' && u.active)) {
+      addNotification(admin.id, 'whatsapp-added', 'Número WhatsApp adicionado', `+${phone}${label ? ' · ' + label : ''} cadastrado por ${user.name}.`, { whatsappId: number.id });
+    }
+    return json(res, 201, { number });
+  }
+  const waId = url.pathname.match(/^\/api\/whatsapp\/([^/]+)$/)?.[1];
+  if (waId && req.method === 'DELETE') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode remover números.' });
+    const idx = whatsappNumbers.findIndex(n => n.id === waId);
+    if (idx < 0) return json(res, 404, { error: 'Número não encontrado.' });
+    whatsappNumbers.splice(idx, 1);
+    saveList(WHATSAPP_FILE, whatsappNumbers);
+    return json(res, 200, { ok: true });
+  }
+  const waAssignId = url.pathname.match(/^\/api\/whatsapp\/([^/]+)\/assign$/)?.[1];
+  if (waAssignId && req.method === 'POST') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Acesso negado.' });
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: e.message }); }
+    const number = whatsappNumbers.find(n => n.id === waAssignId);
+    if (!number) return json(res, 404, { error: 'Número não encontrado.' });
+    const memberId = String(body.userId || '');
+    const member = users.find(u => u.id === memberId && u.role !== 'admin' && u.active);
+    if (!member) return json(res, 404, { error: 'Usuário não encontrado.' });
+    if (!number.assignedUsers.includes(memberId)) {
+      number.assignedUsers.push(memberId);
+      saveList(WHATSAPP_FILE, whatsappNumbers);
+      addNotification(memberId, 'whatsapp-assigned', 'WhatsApp atribuído', `Você recebeu acesso ao número +${number.phone}${number.label ? ' (' + number.label + ')' : ''}.`, { whatsappId: number.id });
+      for (const admin of users.filter(u => u.role === 'admin' && u.active)) {
+        addNotification(admin.id, 'whatsapp-assigned', 'WhatsApp atribuído', `+${number.phone} atribuído a ${member.name} por ${user.name}.`, { whatsappId: number.id });
+      }
+    }
+    return json(res, 200, { number });
+  }
+  const waRemoveId = url.pathname.match(/^\/api\/whatsapp\/([^/]+)\/remove$/)?.[1];
+  if (waRemoveId && req.method === 'POST') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Acesso negado.' });
+    let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: e.message }); }
+    const number = whatsappNumbers.find(n => n.id === waRemoveId);
+    if (!number) return json(res, 404, { error: 'Número não encontrado.' });
+    const memberId = String(body.userId || '');
+    const member = users.find(u => u.id === memberId);
+    number.assignedUsers = number.assignedUsers.filter(id => id !== memberId);
+    saveList(WHATSAPP_FILE, whatsappNumbers);
+    if (member) {
+      addNotification(memberId, 'whatsapp-removed', 'WhatsApp removido', `Seu acesso ao número +${number.phone}${number.label ? ' (' + number.label + ')' : ''} foi removido.`, { whatsappId: number.id });
+      for (const admin of users.filter(u => u.role === 'admin' && u.active)) {
+        addNotification(admin.id, 'whatsapp-removed', 'WhatsApp removido', `+${number.phone} removido de ${member.name} por ${user.name}.`, { whatsappId: number.id });
+      }
+    }
+    return json(res, 200, { number });
   }
   return json(res, 404, { error: 'Rota não encontrada.' });
 }

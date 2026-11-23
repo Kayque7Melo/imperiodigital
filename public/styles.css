@@ -1343,3 +1343,139 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
 html[data-theme="light"] .lvc-tab { background: rgba(255,255,255,.8); border-color: rgba(0,0,0,.12); color: #3d5675 }
 html[data-theme="light"] .lvc-tab.active { background: rgba(75,158,255,.12); border-color: rgba(75,158,255,.35); color: #1a65cc }
 html[data-theme="light"] .link-value-card-v2 { background: #fff }
+
+/* ══════════════════════════════════════════════════════════════════════
+   REGISTROS
+══════════════════════════════════════════════════════════════════════ */
+.records-page { display: grid; gap: 20px }
+
+/* Sumário no topo */
+.records-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.rec-sum-item { display: flex; flex-direction: column; align-items: flex-end }
+.rec-sum-label { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--text3) }
+.rec-sum-item strong { font: 700 15px var(--display) }
+.rec-sum-item.gasto strong { color: #f87171 }
+.rec-sum-item.lucro strong { color: var(--teal) }
+.rec-sum-item.saldo.pos strong { color: var(--teal) }
+.rec-sum-item.saldo.neg strong { color: #f87171 }
+.rec-sum-sep { color: var(--text3) }
+
+/* Form panel */
+.records-form-panel { padding: 20px }
+.records-form { display: grid; gap: 16px; margin-top: 14px }
+
+/* Type selector grid */
+.records-type-grid { display: flex; flex-wrap: wrap; gap: 9px }
+.record-type-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface2); cursor: pointer; font-size: 10px; font-weight: 600;
+  color: var(--text2); transition: border-color .18s, background .18s, color .18s;
+  user-select: none; min-width: 72px;
+}
+.record-type-btn input { position: absolute; opacity: 0; pointer-events: none }
+.record-type-btn:hover { border-color: var(--border-hi); color: var(--text); background: var(--surface) }
+.record-type-btn.active { border-color: rgba(75,158,255,.45); background: rgba(75,158,255,.10); color: var(--blue2) }
+.rtb-icon { display: flex; align-items: center; justify-content: center }
+
+/* Form fields row */
+.records-form-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 11px }
+.records-form-fields .modal-field input { height: 42px }
+.records-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px }
+.records-form-actions .login-error { flex: 1; margin: 0 }
+
+/* Records list */
+.records-list { display: grid; gap: 10px }
+.records-empty { padding: 36px; text-align: center; color: var(--text3); border: 1px dashed var(--border); border-radius: var(--r-md) }
+.records-empty strong { display: block; font: 600 13px var(--display); color: var(--text2); margin-bottom: 6px }
+
+/* Record card */
+.record-card {
+  display: flex; align-items: flex-start; gap: 14px; padding: 15px 16px;
+  transition: border-color .2s, transform .2s var(--ease);
+}
+.record-card:hover { border-color: var(--border-hi); transform: translateY(-2px) }
+.record-card-left { flex: none }
+.record-type-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 13px; overflow: hidden }
+.record-card-body { flex: 1; min-width: 0 }
+.record-card-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 6px }
+.record-type-badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 700 }
+.record-category { font-size: 11px; color: var(--text2); font-weight: 600 }
+.record-phone { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text3); font-variant-numeric: tabular-nums }
+.record-description { margin: 0 0 8px; font-size: 12px; color: var(--text); line-height: 1.55 }
+.record-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px }
+.record-meta { font-size: 10px; color: var(--text3) }
+.record-amount { font: 700 14px var(--display) }
+.record-amount.revenue { color: var(--teal) }
+.record-amount.expense { color: #f87171 }
+.record-delete-btn { flex: none; opacity: .5; transition: opacity .18s }
+.record-delete-btn:hover { opacity: 1; color: var(--red) }
+
+/* Responsive records */
+@media (max-width: 760px) {
+  .records-form-fields { grid-template-columns: 1fr }
+  .records-type-grid { gap: 7px }
+  .record-type-btn { padding: 8px 10px; min-width: 60px; font-size: 9px }
+  .records-summary { justify-content: flex-end }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WHATSAPP MANAGER
+══════════════════════════════════════════════════════════════════════ */
+.whatsapp-page { display: grid; gap: 16px }
+.wa-numbers-list { display: grid; gap: 12px }
+
+.wa-number-card { display: grid; gap: 0; padding: 0; overflow: hidden }
+
+.wa-card-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--border);
+}
+.wa-icon-wrap { flex: none; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 13px; overflow: hidden }
+.wa-card-info { flex: 1; min-width: 0 }
+.wa-phone { display: block; font: 700 15px var(--display); letter-spacing: .02em }
+.wa-label { display: block; font-size: 11px; color: var(--text2); margin-top: 2px }
+.wa-group-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; background: rgba(75,158,255,.10); color: var(--blue2); border: 1px solid rgba(75,158,255,.18) }
+.wa-card-date { font-size: 10px; color: var(--text3); white-space: nowrap; flex: none }
+.danger-icon-btn { color: var(--red); opacity: .6 }
+.danger-icon-btn:hover { opacity: 1; background: rgba(248,113,113,.12) }
+
+.wa-assignments { padding: 14px 18px }
+.wa-assign-label { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px }
+.wa-users-list { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.wa-no-users { font-size: 11px; color: var(--text3); font-style: italic }
+
+.wa-user-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 9px 5px 6px; border-radius: 999px;
+  background: rgba(37,211,102,.10); border: 1px solid rgba(37,211,102,.22);
+  color: var(--text); font-size: 11px; font-weight: 500;
+}
+.wa-chip-avatar { width: 22px; height: 22px; border-radius: 50%; font-size: 8px }
+.wa-chip-remove {
+  display: flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(248,113,113,.15); color: #f87171;
+  border: none; cursor: pointer; transition: background .18s;
+}
+.wa-chip-remove:hover { background: rgba(248,113,113,.35) }
+
+.wa-assign-select-wrap { display: inline-flex }
+.wa-assign-select { height: 32px; font-size: 11px; min-width: 160px; border-radius: 999px; padding: 0 28px 0 12px }
+
+/* Modal overlay for WhatsApp */
+#wa-add-modal[hidden] { display: none }
+#wa-add-modal:not([hidden]) { display: block }
+
+/* Responsive WA */
+@media (max-width: 760px) {
+  .wa-card-header { flex-wrap: wrap; gap: 9px }
+  .wa-card-date { order: 3 }
+  .wa-assign-select { min-width: 130px }
+}
+
+/* Light theme */
+html[data-theme="light"] .record-type-btn { background: #f8fbff; border-color: rgba(0,0,0,.12); color: #3d5675 }
+html[data-theme="light"] .record-type-btn.active { background: rgba(75,158,255,.10); border-color: rgba(75,158,255,.35) }
+html[data-theme="light"] .wa-user-chip { background: rgba(37,211,102,.08); border-color: rgba(37,211,102,.20) }
+html[data-theme="light"] .records-empty { border-color: rgba(0,0,0,.12) }

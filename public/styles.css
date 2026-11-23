@@ -572,6 +572,13 @@ select.search-input {
 .user-table { width: 100%; border-collapse: collapse; min-width: 640px }
 .access-table { min-width: 980px }
 .access-history-note { margin: 9px 3px 0; color: var(--text3); font-size: 10px; line-height: 1.5 }
+.access-approval-panel { margin-bottom: 16px; padding: 16px 18px }
+.access-request-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 0; border-top:1px solid var(--line) }
+.access-request-row > span:first-child { display:grid; gap:4px; min-width:0 }
+.access-request-row strong { color:var(--text); font-size:12px }
+.access-request-row small,.access-place { display:block; color:var(--text3); font-size:10px; margin-top:3px }
+.access-request-row .primary-btn,.access-request-row .soft-btn { min-height:34px; padding:0 12px; font-size:11px }
+.access-request-row button:disabled { opacity:.55; cursor:wait }
 .user-table th {
   text-align: left; padding: 11px 11px; color: var(--text3);
   text-transform: uppercase; letter-spacing: .1em; font-size: 9px; font-weight: 600;

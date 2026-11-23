@@ -17,6 +17,7 @@ const PAYOUTS_FILE = path.join(DATA_DIR, 'payouts.json');
 const LINK_FINGERPRINTS_FILE = path.join(DATA_DIR, 'link-fingerprints.json');
 const ACTIVITY_FILE = path.join(DATA_DIR, 'link-activity.json');
 const ACCESS_FILE = path.join(DATA_DIR, 'access-history.json');
+const ACCESS_REQUESTS_FILE = path.join(DATA_DIR, 'access-requests.json');
 const RECORDS_FILE = path.join(DATA_DIR, 'records.json');
 const WHATSAPP_FILE = path.join(DATA_DIR, 'whatsapp.json');
 const sessions = new Map();
@@ -121,6 +122,7 @@ let payouts = loadList(PAYOUTS_FILE);
 let linkFingerprints = new Set(loadList(LINK_FINGERPRINTS_FILE));
 let linkActivity = loadList(ACTIVITY_FILE);
 let accessHistory = loadList(ACCESS_FILE);
+let accessRequests = loadList(ACCESS_REQUESTS_FILE);
 let records = loadList(RECORDS_FILE);
 let whatsappNumbers = loadList(WHATSAPP_FILE);
 let fingerprintsUpdated = false;
@@ -139,7 +141,7 @@ if (linkFingerprints.size) saveList(LINK_FINGERPRINTS_FILE, [...linkFingerprints
 
 function initialDatabaseState() {
   if (!users.some(item => item.role === 'admin')) users.unshift({ id: crypto.randomUUID(), name: ADMIN_NAME, username: ADMIN_USERNAME, email: ADMIN_EMAIL, role: 'admin', active: true, avatar: '', ...hashPassword(ADMIN_PASSWORD), createdAt: new Date().toISOString() });
-  return { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, sessions: [...sessions.entries()] };
+  return { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
 }
 async function withDatabaseState(req, res, url, runHandler = handleApi) {
   let client = null;
@@ -165,6 +167,7 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     linkFingerprints = new Set(Array.isArray(state.linkFingerprints) ? state.linkFingerprints : []);
     linkActivity = Array.isArray(state.linkActivity) ? state.linkActivity : [];
     accessHistory = Array.isArray(state.accessHistory) ? state.accessHistory : [];
+    accessRequests = Array.isArray(state.accessRequests) ? state.accessRequests : [];
     activeDatabaseClient = client;
     sessions.clear(); for (const [sid, session] of Array.isArray(state.sessions) ? state.sessions : []) sessions.set(sid, session);
     originalHead = res.writeHead.bind(res); originalEnd = res.end.bind(res);
@@ -172,7 +175,7 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     res.end = function(...args) {
       responseCompletion = (async () => {
         try {
-          const next = { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, sessions: [...sessions.entries()] };
+          const next = { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
           await client.query('update equipe_digital_private.app_state set state = $1::jsonb, updated_at = now() where id = 1', [JSON.stringify(next)]);
           await client.query('COMMIT');
           client.release(); activeDatabaseClient = null;
@@ -218,6 +221,25 @@ function fingerprintUrl(parsed) {
 function requestIp(req) {
   const forwarded = process.env.VERCEL ? String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() : '';
   return (forwarded || req.socket?.remoteAddress || '').replace(/^::ffff:/, '').slice(0, 64);
+}
+function requestLocation(req) {
+  if (!process.env.VERCEL) return null;
+  const latitude = Number(req.headers['x-vercel-ip-latitude']);
+  const longitude = Number(req.headers['x-vercel-ip-longitude']);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  const clean = value => { let result = String(value || ''); try { result = decodeURIComponent(result); } catch {} return result.replace(/[<>\u0000-\u001f]/g, '').slice(0, 80); };
+  return { latitude, longitude, city: clean(req.headers['x-vercel-ip-city']), region: clean(req.headers['x-vercel-ip-country-region']), country: clean(req.headers['x-vercel-ip-country']) };
+}
+function distanceKm(a, b) {
+  const radians = value => value * Math.PI / 180;
+  const dLat = radians(b.latitude - a.latitude), dLon = radians(b.longitude - a.longitude);
+  const part = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.latitude)) * Math.cos(radians(b.latitude)) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(part), Math.sqrt(1 - part));
+}
+function deviceKeyHash(userId, value) {
+  const key = String(value || '');
+  if (!/^[a-f0-9-]{36}$/i.test(key)) return null;
+  return crypto.createHash('sha256').update(`${userId}:${key}`).digest('hex');
 }
 
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.webm': 'video/webm', '.ico': 'image/x-icon' };
@@ -345,9 +367,31 @@ async function handleApi(req, res, url) {
       return json(res, 401, { error: 'Usuário ou senha incorretos.' });
     }
     loginAttempts.delete(attemptKey);
-    const created = createSession(user, Boolean(body.remember));
+    const ip = requestIp(req);
+    const location = requestLocation(req);
+    const keyHash = deviceKeyHash(user.id, body.deviceKey);
     const deviceName = String(body.deviceName || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 64);
-    accessHistory.unshift({ id: crypto.randomUUID(), userId: user.id, username: user.username, ip: requestIp(req), userAgent: String(req.headers['user-agent'] || '').slice(0, 240), deviceName: deviceName || null, createdAt: new Date().toISOString() });
+    accessRequests = accessRequests.filter(item => item.expiresAt > Date.now() && item.status !== 'rejected');
+    const priorAccess = accessHistory.find(item => item.userId === user.id && item.location?.latitude != null && item.location?.longitude != null);
+    const distance = location && priorAccess ? distanceKm(priorAccess.location, location) : null;
+    const requiresApproval = distance != null && distance > 300;
+    const requestFingerprint = keyHash && crypto.createHash('sha256').update(`${keyHash}:${ip}`).digest('hex');
+    if (requiresApproval) {
+      const existing = accessRequests.find(item => item.userId === user.id && item.fingerprint === requestFingerprint && item.status === 'pending' && item.expiresAt > Date.now());
+      if (existing) return json(res, 202, { approvalRequired: true, error: 'Este acesso está aguardando aprovação da administração.' });
+      const approved = accessRequests.find(item => item.userId === user.id && item.fingerprint === requestFingerprint && item.status === 'approved' && item.expiresAt > Date.now());
+      if (!approved) {
+        accessRequests.unshift({ id: crypto.randomUUID(), userId: user.id, username: user.username, ip, userAgent: String(req.headers['user-agent'] || '').slice(0, 240), deviceName: deviceName || null, location, distanceKm: Math.round(distance), fingerprint: requestFingerprint, status: 'pending', createdAt: Date.now(), expiresAt: Date.now() + 15 * 60 * 1000 });
+        if (accessRequests.length > 300) accessRequests.length = 300;
+        saveList(ACCESS_REQUESTS_FILE, accessRequests);
+        return json(res, 202, { approvalRequired: true, error: 'Novo local detectado. A administração precisa aprovar este acesso antes de você entrar.' });
+      }
+      approved.status = 'consumed';
+      approved.consumedAt = Date.now();
+      saveList(ACCESS_REQUESTS_FILE, accessRequests);
+    }
+    const created = createSession(user, Boolean(body.remember));
+    accessHistory.unshift({ id: crypto.randomUUID(), userId: user.id, username: user.username, ip, userAgent: String(req.headers['user-agent'] || '').slice(0, 240), deviceName: deviceName || null, deviceKeyHash: keyHash, deviceRecognized: Boolean(keyHash && accessHistory.some(item => item.userId === user.id && item.deviceKeyHash === keyHash)), location, distanceKm: distance == null ? null : Math.round(distance), createdAt: new Date().toISOString() });
     if (accessHistory.length > 5000) accessHistory.length = 5000;
     saveList(ACCESS_FILE, accessHistory);
     return json(res, 200, { user: cleanUser(user), csrf: created.csrf }, { 'Set-Cookie': cookieHeader(created.sid, created.remember, process.env.NODE_ENV === 'production') });
@@ -525,12 +569,26 @@ async function handleApi(req, res, url) {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode consultar os acessos.' });
     const selectedId = url.searchParams.get('userId');
     const rows = accessHistory.filter(item => !selectedId || selectedId === 'all' || item.userId === selectedId).slice(0, 500);
-    return json(res, 200, { accesses: rows.map(item => ({ ...item, userName: users.find(member => member.id === item.userId)?.name || item.username })) });
+    const pending = accessRequests.filter(item => item.status === 'pending' && item.expiresAt > Date.now()).map(({ fingerprint, ...item }) => ({ ...item, userName: users.find(member => member.id === item.userId)?.name || item.username }));
+    return json(res, 200, { accesses: rows.map(item => { const { deviceKeyHash, ...safe } = item; return { ...safe, userName: users.find(member => member.id === item.userId)?.name || item.username }; }), pendingRequests: pending });
+  }
+  const accessDecisionMatch = url.pathname.match(/^\/api\/access-requests\/([0-9a-f-]{36})$/i);
+  if (accessDecisionMatch && req.method === 'POST') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode decidir acessos.' });
+    if (!csrfOkay(req, found.session)) return json(res, 403, { error: 'Sessão inválida. Atualize a página.' });
+    let body; try { body = await readBody(req); } catch (error) { return json(res, 400, { error: error.message }); }
+    const request = accessRequests.find(item => item.id === accessDecisionMatch[1] && item.status === 'pending' && item.expiresAt > Date.now());
+    if (!request) return json(res, 404, { error: 'Esta solicitação expirou ou já foi analisada.' });
+    if (!['approve', 'reject'].includes(body.decision)) return json(res, 400, { error: 'Decisão inválida.' });
+    request.status = body.decision === 'approve' ? 'approved' : 'rejected';
+    request.decidedAt = Date.now(); request.decidedBy = user.id;
+    saveList(ACCESS_REQUESTS_FILE, accessRequests);
+    return json(res, 200, { ok: true });
   }
   if (url.pathname === '/api/admin/backup' && req.method === 'GET') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode baixar o backup.' });
     const safeUsers = users.map(({ hash, salt, ...profile }) => profile);
-    const snapshot = { application: 'Império Digital', createdAt: new Date().toISOString(), users: safeUsers, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory };
+    const snapshot = { application: 'Império Digital', createdAt: new Date().toISOString(), users: safeUsers, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory: accessHistory.map(({ deviceKeyHash, ...item }) => item), accessRequests: accessRequests.map(({ fingerprint, ...item }) => item) };
     return json(res, 200, snapshot, { 'Content-Disposition': `attachment; filename="imperio-digital-backup-${new Date().toISOString().slice(0,10)}.json"` });
   }
   if (url.pathname === '/api/payouts' && req.method === 'POST') {

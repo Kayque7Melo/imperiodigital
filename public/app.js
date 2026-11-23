@@ -12,6 +12,7 @@ let selectedLinkBm = 'all';
 let showLinkArchive = false;
 let rankingPeriod = 'daily';
 let accessRows = [];
+let accessRequests = [];
 let recordsData = [];
 let whatsappData = [];
 let accessUserFilter = 'all';
@@ -93,13 +94,18 @@ async function api(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', ...options, headers });
   let data;
   try { data = await response.json(); } catch { data = {}; }
-  if (!response.ok) {
+  if (!response.ok || data.approvalRequired) {
     const fallback = response.status === 404
       ? 'A API do sistema não foi encontrada nesta implantação. Aguarde a publicação mais recente da Vercel.'
       : `O servidor não concluiu a solicitação (erro ${response.status}). Tente novamente em instantes.`;
     throw Object.assign(new Error(data.error || fallback), { status: response.status });
   }
   return data;
+}
+function browserDeviceKey() {
+  let key = localStorage.getItem('eq_device_key');
+  if (!/^[a-f0-9-]{36}$/i.test(key || '')) { key = crypto.randomUUID(); localStorage.setItem('eq_device_key', key); }
+  return key;
 }
 async function copyTextToClipboard(value) {
   try {
@@ -126,10 +132,9 @@ function brand(mobile = false) {
 }
 function renderLogin() {
   const saved = localStorage.getItem('eq_saved_login') || '';
-  const savedDevice = localStorage.getItem('eq_device_name') || '';
   app.innerHTML = `<main class="login-screen">
     <section class="login-art">${brand()}<div class="art-center"><div class="brand-logo"><img src="/imperio-logo.png" alt="Império Digital Ads"></div><div class="orb-wrap"><div class="orb-halo one"></div><div class="orb-halo two"></div><div class="orb-line"></div><div class="orb-line second"></div><div class="orb"></div></div><div class="art-copy"><span class="art-kicker">Império Digital</span><h1>Seu trabalho merece um espaço <span>à altura.</span></h1><p>Um ambiente privado para conectar pessoas, organizar a operação e transformar boas ideias em movimento.</p></div></div><div class="art-foot"><span>© ${new Date().getFullYear()} Império Digital</span><span class="connection"><i></i> Ambiente seguro</span></div></section>
-    <section class="login-side"><div class="login-card">${brand(true)}<div class="login-eyebrow">Acesso à equipe</div><h2>Bom ter você por aqui.</h2><p class="login-lead">Entre com os dados da sua conta para acessar seu espaço de trabalho.</p><form id="login-form"><div class="field"><label for="username">Nome de usuário ou e-mail</label><input id="username" name="username" autocomplete="username" placeholder="Seu usuário ou e-mail" value="${escapeHtml(saved)}" required autofocus></div><div class="field"><label for="password">Senha</label><div class="input-wrap"><input class="has-toggle" id="password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required><button class="password-toggle" id="show-password" type="button">Mostrar</button></div></div><div class="field device-name-field"><label for="device-name">Nome deste computador (opcional)</label><input id="device-name" name="deviceName" autocomplete="off" maxlength="64" placeholder="Ex.: PC do escritório" value="${escapeHtml(savedDevice)}"><small>O navegador não informa o nome real do PC; digite o nome que deseja ver no histórico.</small></div><div class="form-row"><label class="check-label"><input id="remember-login" type="checkbox" ${saved ? 'checked' : ''}> Lembrar meu login neste aparelho</label><span>Área restrita</span></div><div class="login-error" id="login-error"></div><button class="primary-btn login-submit" id="login-submit" type="submit">Entrar no espaço ${svg('arrow', 15)}</button></form><div class="secure-note">${svg('lock', 14)} Acesso protegido e exclusivo para convidados</div><div class="login-note">As contas são disponibilizadas pela administração da equipe.<br>Precisa de acesso? Fale com o administrador.</div></div></section></main>`;
+    <section class="login-side"><div class="login-card">${brand(true)}<div class="login-eyebrow">Acesso à equipe</div><h2>Bom ter você por aqui.</h2><p class="login-lead">Entre com os dados da sua conta para acessar seu espaço de trabalho.</p><form id="login-form"><div class="field"><label for="username">Nome de usuário ou e-mail</label><input id="username" name="username" autocomplete="username" placeholder="Seu usuário ou e-mail" value="${escapeHtml(saved)}" required autofocus></div><div class="field"><label for="password">Senha</label><div class="input-wrap"><input class="has-toggle" id="password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required><button class="password-toggle" id="show-password" type="button">Mostrar</button></div></div><div class="form-row"><label class="check-label"><input id="remember-login" type="checkbox" ${saved ? 'checked' : ''}> Lembrar meu login neste aparelho</label><span>Área restrita</span></div><div class="login-error" id="login-error"></div><button class="primary-btn login-submit" id="login-submit" type="submit">Entrar no espaço ${svg('arrow', 15)}</button></form><div class="secure-note">${svg('lock', 14)} Acesso protegido e exclusivo para convidados</div><div class="login-note">As contas são disponibilizadas pela administração da equipe.<br>Precisa de acesso? Fale com o administrador.</div></div></section></main>`;
   document.querySelector('#show-password').addEventListener('click', event => {
     const input = document.querySelector('#password');
     input.type = input.type === 'password' ? 'text' : 'password';
@@ -146,11 +151,9 @@ function renderLogin() {
       const form = new FormData(event.currentTarget);
       const username = String(form.get('username')).trim();
       const remember = document.querySelector('#remember-login').checked;
-      const deviceName = String(form.get('deviceName') || '').trim().slice(0, 64);
-      const result = await api('/api/login', { method: 'POST', body: JSON.stringify({ username, password: form.get('password'), remember, deviceName }) });
+      const result = await api('/api/login', { method: 'POST', body: JSON.stringify({ username, password: form.get('password'), remember, deviceKey: browserDeviceKey() }) });
       csrf = result.csrf; current = result.user; activeView = 'overview';
       if (remember) localStorage.setItem('eq_saved_login', username); else localStorage.removeItem('eq_saved_login');
-      if (deviceName) localStorage.setItem('eq_device_name', deviceName); else localStorage.removeItem('eq_device_name');
       await openDashboard();
     } catch (err) {
       error.textContent = err.message;
@@ -234,7 +237,7 @@ async function fetchInsights() {
   const userId=admin?activityUserFilter:'all';
   const accessQuery=accessUserFilter==='all'?'':`?userId=${encodeURIComponent(accessUserFilter)}`;
   const results=await Promise.all([api(`/api/activity?userId=${encodeURIComponent(userId)}`,{headers:{'X-CSRF-Token':csrf}}),api(`/api/ranking?period=${rankingPeriod}`,{headers:{'X-CSRF-Token':csrf}}),...(admin?[api('/api/payouts',{headers:{'X-CSRF-Token':csrf}}),api(`/api/access-history${accessQuery}`,{headers:{'X-CSRF-Token':csrf}})]:[])]);
-  activityData=results[0];rankingData=results[1].ranking||[];if(admin){payoutData=results[2];accessRows=results[3].accesses||[];}
+  activityData=results[0];rankingData=results[1].ranking||[];if(admin){payoutData=results[2];accessRows=results[3].accesses||[];accessRequests=results[3].pendingRequests||[];}
 }
 function rankingView() {
   const podium=rankingData.slice(0,3);const podiumOrder=[podium[1],podium[0],podium[2]].filter(Boolean);
@@ -267,8 +270,16 @@ function summarizeAccessAgent(value) {
   else if (/Linux/i.test(ua)) os = 'Linux';
   return { browser, os };
 }
+function formatAccessLocation(location) {
+  if (!location) return 'Localização indisponível';
+  const states={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
+  const state=states[location.region]||location.region;
+  if(state&&location.city)return `${state} (${location.city})`;
+  return [location.city,state,location.country].filter(Boolean).join(', ')||'Localização indisponível';
+}
 function accessView() {
-  return `<section><div class="section-title"><div><div class="eyebrow">SEGURANÇA E CONTROLE</div><h2>Histórico de acessos</h2><p>IP, navegador, sistema operacional, nome do computador informado e horário dos últimos logins.</p></div><div class="link-head-actions"><select id="access-user-filter" class="search-input"><option value="all">Todos os usuários</option>${members.filter(member=>member.role!=='admin').map(member=>`<option value="${escapeHtml(member.id)}" ${accessUserFilter===member.id?'selected':''}>${escapeHtml(member.name)}</option>`).join('')}</select><button class="soft-btn" id="download-backup">Baixar backup</button></div></div><article class="panel table-wrap"><table class="user-table access-table"><thead><tr><th>Usuário</th><th>IP</th><th>Navegador</th><th>Sistema</th><th>Nome do computador</th><th>Data e hora</th></tr></thead><tbody>${accessRows.map(row=>{const client=summarizeAccessAgent(row.userAgent);return `<tr><td>${escapeHtml(row.userName)} · @${escapeHtml(row.username)}</td><td>${escapeHtml(row.ip||'Não identificado')}</td><td>${escapeHtml(client.browser)}</td><td>${escapeHtml(client.os)}</td><td>${escapeHtml(row.deviceName||'Não informado')}</td><td>${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(row.createdAt))}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty-state">Ainda não há acessos registrados.</td></tr>'}</tbody></table></article><p class="access-history-note">O nome do computador é informado pela pessoa no login. Navegadores não fornecem o hostname real automaticamente.</p></section>`;
+  const pending = `<article class="panel access-approval-panel"><div class="panel-head"><div><h3>Acessos aguardando aprovação</h3><span>Confira a região aproximada antes de liberar um acesso distante.</span></div><b>${accessRequests.length}</b></div>${accessRequests.map(item=>{const client=summarizeAccessAgent(item.userAgent);const place=formatAccessLocation(item.location);return `<div class="access-request-row"><span><strong>${escapeHtml(item.userName)} · @${escapeHtml(item.username)}</strong><small>${escapeHtml(place)} · IP ${escapeHtml(item.ip||'não identificado')} · ${Math.round(item.distanceKm||0)} km da referência</small><small>${escapeHtml(client.browser)} · dispositivo ${item.distanceKm>300?'não reconhecido':'a confirmar'}</small></span><span><button class="soft-btn" data-access-decision="reject" data-request-id="${escapeHtml(item.id)}">Recusar</button> <button class="primary-btn" data-access-decision="approve" data-request-id="${escapeHtml(item.id)}">Aprovar</button></span></div>`}).join('')||'<div class="notification-empty">Nenhum acesso distante aguardando aprovação.</div>'}</article>`;
+  return `<section><div class="section-title"><div><div class="eyebrow">SEGURANÇA E CONTROLE</div><h2>Histórico de acessos</h2><p>Região aproximada por IP, navegador e sistema usado.</p></div><div class="link-head-actions"><select id="access-user-filter" class="search-input"><option value="all">Todos os usuários</option>${members.filter(member=>member.role!=='admin').map(member=>`<option value="${escapeHtml(member.id)}" ${accessUserFilter===member.id?'selected':''}>${escapeHtml(member.name)}</option>`).join('')}</select><button class="soft-btn" id="download-backup">Baixar backup</button></div></div>${pending}<article class="panel table-wrap"><table class="user-table access-table"><thead><tr><th>Usuário</th><th>IP</th><th>Navegador</th><th>Sistema</th><th>Região</th><th>Reconhecimento do dispositivo</th><th>Data e hora</th></tr></thead><tbody>${accessRows.map(row=>{const client=summarizeAccessAgent(row.userAgent);const place=formatAccessLocation(row.location);return `<tr><td>${escapeHtml(row.userName)} · @${escapeHtml(row.username)}</td><td>${escapeHtml(row.ip||'Não identificado')}</td><td>${escapeHtml(client.browser)}</td><td>${escapeHtml(client.os)}</td><td>${escapeHtml(place)}</td><td>${row.deviceRecognized?'Reconhecido':'Novo / não reconhecido'}</td><td>${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(row.createdAt))}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty-state">Ainda não há acessos registrados.</td></tr>'}</tbody></table></article><p class="access-history-note">A região é estimada pelo endereço IP e pode ter pequenas variações.</p></section>`;
 }async function fetchLinks() {
   const isAdmin = current?.role === 'admin' && !dashboardData?.impersonating;
   const params = new URLSearchParams();
@@ -924,7 +935,7 @@ function renderDashboard() {
       btn.innerHTML = `${svg('arrow', 14)} Acessar Consulta de CNPJ`;
     }
   });
-  document.querySelectorAll('[data-nav],[data-open-view]').forEach(button => button.addEventListener('click', () => {
+  document.querySelectorAll('[data-nav],[data-open-view]').forEach(button => button.addEventListener('click', async () => {
     const view = button.dataset.nav || button.dataset.openView;
     if (view === 'security') return notify('Sua sessão está protegida.');
     activeView = view;
@@ -941,6 +952,7 @@ function renderDashboard() {
     if (!card) return;
     const isDaily = radio.value === 'daily';
     card.querySelector('.lvc-fields-per-link')?.toggleAttribute('hidden', isDaily);
+    if (view === 'access' && isAdmin) { try { await fetchInsights(); } catch (error) { notify(error.message); } }
     card.querySelector('.lvc-fields-daily')?.toggleAttribute('hidden', !isDaily);
     card.querySelectorAll('.lvc-tab').forEach(tab => tab.classList.toggle('active', tab.querySelector('input')?.value === radio.value));
   }));
@@ -976,6 +988,12 @@ function renderDashboard() {
   document.querySelector('#download-backup')?.addEventListener('click', async () => {
     try {
       const snapshot = await api('/api/admin/backup', { headers: { 'X-CSRF-Token': csrf } });
+  document.querySelectorAll('[data-access-decision]').forEach(button=>button.addEventListener('click',async()=>{
+    const decision=button.dataset.accessDecision;
+    button.disabled=true;
+    try { await api(`/api/access-requests/${encodeURIComponent(button.dataset.requestId)}`,{method:'POST',body:JSON.stringify({decision}),headers:{'X-CSRF-Token':csrf}}); await fetchInsights(); renderDashboard(); notify(decision==='approve'?'Acesso aprovado. A pessoa deve repetir o login no mesmo dispositivo e IP.':'Solicitação de acesso recusada.'); }
+    catch(error){button.disabled=false;notify(error.message);}
+  }));
       const file = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
       const anchor = document.createElement('a'); anchor.href = URL.createObjectURL(file); anchor.download = `imperio-digital-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(anchor.href), 1000); notify('Backup baixado com sucesso.');
     } catch (error) { notify(error.message); }

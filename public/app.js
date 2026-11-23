@@ -590,7 +590,7 @@ function tutorialView() {
     <section class="tutorial-video panel"><div class="tutorial-video-copy"><span class="eyebrow">VÍDEO DE APOIO</span><h2>Orientação em vídeo</h2><p>O vídeo institucional é servido diretamente dos arquivos do projeto, sem gravar mídia no banco de dados.</p></div><div class="tutorial-media"><div class="tutorial-video-placeholder" aria-label="Vídeo de orientação será adicionado aqui"><span>${svg('play', 34)}</span><strong>Vídeo em breve</strong><small>Adicione <code>public/tutorial/bm-configuracao.mp4</code> ao projeto</small></div><video class="tutorial-player" controls preload="metadata" aria-label="Tutorial em vídeo sobre configuração da BM"><source src="/tutorial/bm-configuracao.mp4" type="video/mp4">Seu navegador não consegue reproduzir este vídeo.</video></div></section>
     <div class="section-title tutorial-section-title"><div><h2>Script de criação e configuração de BM</h2><p>Confira cada etapa antes de avançar.</p></div><span class="tutorial-count">${steps.length} etapas</span></div>
     <div class="tutorial-steps">${steps.map(step => `<article class="tutorial-step panel ${step.images ? 'has-images' : ''}"><span class="tutorial-step-number">${step.number}</span><div class="tutorial-step-content"><h3>${step.title}</h3>${step.intro ? `<strong class="tutorial-step-intro">${step.intro}</strong>` : ''}${step.blocks.map(block => `${block.title ? `<strong class="tutorial-step-intro">${block.title}</strong>` : ''}<ul class="tutorial-step-bullets">${block.items.map(item => `<li>${item}</li>`).join('')}</ul>`).join('')}${step.finish ? `<strong class="tutorial-step-finish">${step.finish}</strong>` : ''}</div>${step.images ? `<div class="tutorial-step-images"><figure><figcaption><strong>${step.images.title || step.title}</strong><span>${step.images.note}</span></figcaption><button class="tutorial-image-button" type="button" data-tutorial-image="${step.images.src}" data-image-alt="${step.images.alt}" data-image-title="${step.images.title || step.title}" data-image-description="${step.images.note}" aria-label="Ampliar: ${step.images.title || step.title}"><img src="${step.images.src}" alt="${step.images.alt}" loading="lazy"></button></figure></div>` : ''}</article>`).join('')}</div>
-    <section class="tutorial-reference panel"><div class="tutorial-reference-info"><span class="eyebrow">REFERÊNCIA ADICIONAL</span><h2>Consulta pública de CNPJ</h2><p>Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa.</p><div class="tutorial-reference-actions"><a class="primary-btn compact" href="https://metaads-pi.vercel.app/" target="_blank" rel="noopener noreferrer">${svg('arrow', 14)} Abrir consulta de CNPJ</a><button class="soft-btn" type="button" id="show-cnpj-access" aria-expanded="false">${svg('eye', 14)} Exibir dados de acesso</button></div><div class="tutorial-cnpj-access" id="cnpj-access-details" hidden><div><span>E-mail</span><strong id="cnpj-access-email"></strong><button type="button" class="soft-btn" data-copy-cnpj="email">Copiar e-mail</button></div><div><span>Senha</span><strong id="cnpj-access-password"></strong><button type="button" class="soft-btn" data-copy-cnpj="password">Copiar senha</button></div><small>Use este acesso somente no site indicado e mantenha os dados restritos à equipe.</small></div></div><button class="tutorial-image-button tutorial-reference-image" type="button" data-tutorial-image="/tutorial/referencia-consulta-cnpj.png" data-image-alt="Referência visual de consulta de dados cadastrais de CNPJ" data-image-title="Consulta pública de CNPJ" data-image-description="Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa." aria-label="Ampliar referência de consulta pública de CNPJ"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta de dados cadastrais de CNPJ" loading="lazy"></button></section>
+    <section class="tutorial-reference panel"><div class="tutorial-reference-info"><span class="eyebrow">REFERÊNCIA ADICIONAL</span><h2>Consulta pública de CNPJ</h2><p>Confira os dados cadastrais de qualquer empresa diretamente. O acesso é feito com sua conta da Império Digital — sem precisar digitar usuário ou senha.</p><div class="tutorial-reference-actions"><button class="primary-btn compact" type="button" id="open-cnpj-portal">${svg('arrow', 14)} Acessar Consulta de CNPJ</button></div><small class="tutorial-cnpj-sso-note">Você será redirecionado automaticamente. O acesso expira em 5 minutos por segurança.</small></div><button class="tutorial-image-button tutorial-reference-image" type="button" data-tutorial-image="/tutorial/referencia-consulta-cnpj.png" data-image-alt="Referência visual de consulta de dados cadastrais de CNPJ" data-image-title="Consulta pública de CNPJ" data-image-description="Confira os dados em fontes confiáveis e utilize somente o cadastro da própria empresa." aria-label="Ampliar referência de consulta pública de CNPJ"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta de dados cadastrais de CNPJ" loading="lazy"></button></section>
     <div class="tutorial-footer-note"><strong>Segurança:</strong> não compartilhe senhas nem códigos de confirmação. A aprovação depende da análise oficial da Meta.</div><dialog class="tutorial-lightbox" aria-label="Imagem ampliada"><button class="tutorial-lightbox-close" type="button" aria-label="Fechar imagem">${svg('close', 24)}</button><img class="tutorial-lightbox-image" alt=""><div class="tutorial-lightbox-caption"><strong></strong><span></span></div></dialog></section>`;
 }function renderDashboard() {
   const isAdmin = current?.role === 'admin' && !dashboardData?.impersonating;
@@ -633,31 +633,20 @@ function tutorialView() {
   }));
   tutorialLightbox?.querySelector('.tutorial-lightbox-close')?.addEventListener('click', () => tutorialLightbox.close());
   tutorialLightbox?.addEventListener('click', event => { if (event.target === tutorialLightbox) tutorialLightbox.close(); });
-  const cnpjAccessButton = document.querySelector('#show-cnpj-access');
-  const cnpjAccessDetails = document.querySelector('#cnpj-access-details');
-  let cnpjAccess = null;
-  cnpjAccessButton?.addEventListener('click', async () => {
-    if (cnpjAccessDetails && !cnpjAccessDetails.hidden) {
-      cnpjAccessDetails.hidden = true;
-      cnpjAccessButton.setAttribute('aria-expanded', 'false');
-      cnpjAccessButton.innerHTML = `${svg('eye', 14)} Exibir dados de acesso`;
-      return;
-    }
+  // SSO → Consulta de CNPJ
+  document.querySelector('#open-cnpj-portal')?.addEventListener('click', async () => {
+    const btn = document.querySelector('#open-cnpj-portal');
+    btn.disabled = true;
+    btn.innerHTML = `${svg('clock', 14)} Gerando acesso…`;
     try {
-      cnpjAccess ||= await api('/api/tutorial/cnpj-access', { headers: { 'X-CSRF-Token': csrf } });
-      document.querySelector('#cnpj-access-email').textContent = cnpjAccess.email;
-      document.querySelector('#cnpj-access-password').textContent = cnpjAccess.password;
-      cnpjAccessDetails.hidden = false;
-      cnpjAccessButton.setAttribute('aria-expanded', 'true');
-      cnpjAccessButton.innerHTML = `${svg('eye', 14)} Ocultar dados de acesso`;
+      const { token } = await api('/api/cnpj-token', { headers: { 'X-CSRF-Token': csrf } });
+      window.open(`https://metaads-pi.vercel.app/?token=${encodeURIComponent(token)}`, '_blank', 'noopener');
     } catch (error) { notify(error.message); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = `${svg('arrow', 14)} Acessar Consulta de CNPJ`;
+    }
   });
-  document.querySelectorAll('[data-copy-cnpj]').forEach(button => button.addEventListener('click', async () => {
-    const value = cnpjAccess?.[button.dataset.copyCnpj];
-    if (!value) return;
-    try { await copyTextToClipboard(value); notify('Dado de acesso copiado.'); }
-    catch { notify('Não foi possível copiar o dado de acesso.'); }
-  }));
   document.querySelectorAll('[data-nav],[data-open-view]').forEach(button => button.addEventListener('click', () => {
     const view = button.dataset.nav || button.dataset.openView;
     if (view === 'security') return notify('Sua sessão está protegida.');

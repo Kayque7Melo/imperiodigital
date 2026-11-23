@@ -295,6 +295,11 @@ const cookieHeader = (sid, remember, secure = false) => `eq_session=${encodeURIC
 const safeEqual = (a, b) => { try { return crypto.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex')); } catch { return false; } };
 
 async function handleApi(req, res, url) {
+  // ── CORS preflight para /api/cnpj-verify (chamado pelo metaads) ───────────
+  if (req.method === 'OPTIONS' && url.pathname === '/api/cnpj-verify') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': 'https://metaads-pi.vercel.app', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', 'Vary': 'Origin' });
+    return res.end();
+  }
   if (req.method === 'POST' && url.pathname === '/api/login') {
     const attemptKey = requestIp(req) || 'unknown';
     const attempts = loginAttempts.get(attemptKey) || { count: 0, resetAt: Date.now() + 900_000, blockedUntil: 0 };
@@ -342,6 +347,28 @@ async function handleApi(req, res, url) {
   }
   const avatarReadMatch = url.pathname.match(/^\/api\/profile\/avatar\/([0-9a-f-]{36})\.(png|jpg|webp)$/);
   if (avatarReadMatch && req.method === 'GET') return handleAvatar(req, res, `/avatars/${avatarReadMatch[1]}.${avatarReadMatch[2]}`);
+  // ── SSO: verifica token de acesso à Consulta CNPJ (público, sem sessão) ──────
+  if (url.pathname === '/api/cnpj-verify' && req.method === 'GET') {
+    const token = String(url.searchParams.get('token') || '');
+    const secret = process.env.CNPJ_SSO_SECRET || '';
+    if (!secret || !token) return json(res, 401, { valid: false, error: 'Token inválido.' }, { 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': 'https://metaads-pi.vercel.app', 'Access-Control-Allow-Methods': 'GET', 'Vary': 'Origin' });
+    const corsHeader = { 'Access-Control-Allow-Origin': 'https://metaads-pi.vercel.app', 'Access-Control-Allow-Methods': 'GET', 'Vary': 'Origin', 'Cache-Control': 'no-store, private' };
+    try {
+      const dot = token.lastIndexOf('.');
+      if (dot < 1) return json(res, 401, { valid: false, error: 'Token malformado.' }, corsHeader);
+      const payloadB64 = token.slice(0, dot);
+      const sig = token.slice(dot + 1);
+      const expected = crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
+      // constant-time compare
+      const expBuf = Buffer.from(expected); const sigBuf = Buffer.from(sig.padEnd(expected.length, ' ').slice(0, expected.length));
+      if (expBuf.length !== sigBuf.length || !crypto.timingSafeEqual(expBuf, sigBuf)) return json(res, 401, { valid: false, error: 'Assinatura inválida.' }, corsHeader);
+      const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+      if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return json(res, 401, { valid: false, error: 'Token expirado.' }, corsHeader);
+      const member = users.find(u => u.id === payload.uid && u.active);
+      if (!member) return json(res, 401, { valid: false, error: 'Usuário não encontrado.' }, corsHeader);
+      return json(res, 200, { valid: true, name: member.name, username: member.username }, corsHeader);
+    } catch { return json(res, 401, { valid: false, error: 'Token inválido.' }, corsHeader); }
+  }
   if (!user) return json(res, 401, { error: 'Faça login para continuar.' });
   if (!found || !csrfOkay(req, found.session)) return json(res, 403, { error: 'Sessão inválida. Atualize a página.' });
   if (url.pathname === '/api/tutorial/cnpj-access' && req.method === 'GET') {
@@ -349,6 +376,16 @@ async function handleApi(req, res, url) {
     const password = String(process.env.CNPJ_PORTAL_PASSWORD || '');
     if (!email || !password) return json(res, 503, { error: 'O acesso compartilhado ainda não foi configurado.' }, { 'Cache-Control': 'no-store, private' });
     return json(res, 200, { email, password }, { 'Cache-Control': 'no-store, private', 'Pragma': 'no-cache' });
+  }
+  // ── SSO: gera token de acesso à Consulta CNPJ ──────────────────────────────
+  if (url.pathname === '/api/cnpj-token' && req.method === 'GET') {
+    const secret = process.env.CNPJ_SSO_SECRET || '';
+    if (!secret) return json(res, 503, { error: 'SSO não configurado. Defina CNPJ_SSO_SECRET nas variáveis de ambiente.' }, { 'Cache-Control': 'no-store' });
+    const payload = { uid: user.id, name: user.name, exp: Math.floor(Date.now() / 1000) + 300 }; // 5 min
+    const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const sig = crypto.createHmac('sha256', secret).update(payloadB64).digest('base64url');
+    const token = `${payloadB64}.${sig}`;
+    return json(res, 200, { token }, { 'Cache-Control': 'no-store, private' });
   }
   if (url.pathname === '/api/dashboard' && req.method === 'GET') {
     const active = users.filter(item => item.active).length;

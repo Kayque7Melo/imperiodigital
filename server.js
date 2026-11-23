@@ -37,7 +37,8 @@ loadEnv();
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL || '';
 const postgresUrl = DATABASE_URL ? new URL(DATABASE_URL) : null;
 postgresUrl?.searchParams.delete('sslmode');
-const databasePool = DATABASE_URL ? new Pool({ connectionString: postgresUrl.toString(), max: Number(process.env.DB_POOL_MAX || 1), connectionTimeoutMillis: 8000, idleTimeoutMillis: 10000, ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: true } }) : null;
+const databaseSsl = { ca: fs.readFileSync(path.join(ROOT, 'supabase', 'prod-ca-2021.crt'), 'utf8'), rejectUnauthorized: true };
+const databasePool = DATABASE_URL ? new Pool({ connectionString: postgresUrl.toString(), max: Number(process.env.DB_POOL_MAX || 1), connectionTimeoutMillis: 8000, idleTimeoutMillis: 10000, ssl: databaseSsl }) : null;
 let activeDatabaseClient = null;
 
 const PORT = Number(process.env.PORT || 3000);

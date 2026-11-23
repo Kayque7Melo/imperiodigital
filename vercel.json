@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/avatars/:path*", "destination": "/api/avatars/:path*" }
+  ]
+}

@@ -126,9 +126,10 @@ function brand(mobile = false) {
 }
 function renderLogin() {
   const saved = localStorage.getItem('eq_saved_login') || '';
+  const savedDevice = localStorage.getItem('eq_device_name') || '';
   app.innerHTML = `<main class="login-screen">
     <section class="login-art">${brand()}<div class="art-center"><div class="brand-logo"><img src="/imperio-logo.png" alt="Império Digital Ads"></div><div class="orb-wrap"><div class="orb-halo one"></div><div class="orb-halo two"></div><div class="orb-line"></div><div class="orb-line second"></div><div class="orb"></div></div><div class="art-copy"><span class="art-kicker">Império Digital</span><h1>Seu trabalho merece um espaço <span>à altura.</span></h1><p>Um ambiente privado para conectar pessoas, organizar a operação e transformar boas ideias em movimento.</p></div></div><div class="art-foot"><span>© ${new Date().getFullYear()} Império Digital</span><span class="connection"><i></i> Ambiente seguro</span></div></section>
-    <section class="login-side"><div class="login-card">${brand(true)}<div class="login-eyebrow">Acesso à equipe</div><h2>Bom ter você por aqui.</h2><p class="login-lead">Entre com os dados da sua conta para acessar seu espaço de trabalho.</p><form id="login-form"><div class="field"><label for="username">Nome de usuário ou e-mail</label><input id="username" name="username" autocomplete="username" placeholder="Seu usuário ou e-mail" value="${escapeHtml(saved)}" required autofocus></div><div class="field"><label for="password">Senha</label><div class="input-wrap"><input class="has-toggle" id="password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required><button class="password-toggle" id="show-password" type="button">Mostrar</button></div></div><div class="form-row"><label class="check-label"><input id="remember-login" type="checkbox" ${saved ? 'checked' : ''}> Lembrar meu login neste aparelho</label><span>Área restrita</span></div><div class="login-error" id="login-error"></div><button class="primary-btn login-submit" id="login-submit" type="submit">Entrar no espaço ${svg('arrow', 15)}</button></form><div class="secure-note">${svg('lock', 14)} Acesso protegido e exclusivo para convidados</div><div class="login-note">As contas são disponibilizadas pela administração da equipe.<br>Precisa de acesso? Fale com o administrador.</div></div></section></main>`;
+    <section class="login-side"><div class="login-card">${brand(true)}<div class="login-eyebrow">Acesso à equipe</div><h2>Bom ter você por aqui.</h2><p class="login-lead">Entre com os dados da sua conta para acessar seu espaço de trabalho.</p><form id="login-form"><div class="field"><label for="username">Nome de usuário ou e-mail</label><input id="username" name="username" autocomplete="username" placeholder="Seu usuário ou e-mail" value="${escapeHtml(saved)}" required autofocus></div><div class="field"><label for="password">Senha</label><div class="input-wrap"><input class="has-toggle" id="password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" required><button class="password-toggle" id="show-password" type="button">Mostrar</button></div></div><div class="field device-name-field"><label for="device-name">Nome deste computador (opcional)</label><input id="device-name" name="deviceName" autocomplete="off" maxlength="64" placeholder="Ex.: PC do escritório" value="${escapeHtml(savedDevice)}"><small>O navegador não informa o nome real do PC; digite o nome que deseja ver no histórico.</small></div><div class="form-row"><label class="check-label"><input id="remember-login" type="checkbox" ${saved ? 'checked' : ''}> Lembrar meu login neste aparelho</label><span>Área restrita</span></div><div class="login-error" id="login-error"></div><button class="primary-btn login-submit" id="login-submit" type="submit">Entrar no espaço ${svg('arrow', 15)}</button></form><div class="secure-note">${svg('lock', 14)} Acesso protegido e exclusivo para convidados</div><div class="login-note">As contas são disponibilizadas pela administração da equipe.<br>Precisa de acesso? Fale com o administrador.</div></div></section></main>`;
   document.querySelector('#show-password').addEventListener('click', event => {
     const input = document.querySelector('#password');
     input.type = input.type === 'password' ? 'text' : 'password';
@@ -145,9 +146,11 @@ function renderLogin() {
       const form = new FormData(event.currentTarget);
       const username = String(form.get('username')).trim();
       const remember = document.querySelector('#remember-login').checked;
-      const result = await api('/api/login', { method: 'POST', body: JSON.stringify({ username, password: form.get('password'), remember }) });
+      const deviceName = String(form.get('deviceName') || '').trim().slice(0, 64);
+      const result = await api('/api/login', { method: 'POST', body: JSON.stringify({ username, password: form.get('password'), remember, deviceName }) });
       csrf = result.csrf; current = result.user; activeView = 'overview';
       if (remember) localStorage.setItem('eq_saved_login', username); else localStorage.removeItem('eq_saved_login');
+      if (deviceName) localStorage.setItem('eq_device_name', deviceName); else localStorage.removeItem('eq_device_name');
       await openDashboard();
     } catch (err) {
       error.textContent = err.message;
@@ -238,10 +241,35 @@ function rankingView() {
   const bars=rankingData.slice(0,8);const max=Math.max(1,...bars.map(item=>item.submitted));
   return `<section class="ranking-page"><div class="section-title"><div><div class="eyebrow">DESEMPENHO DA EQUIPE</div><h2>Ranking de envios</h2><p>Compare o ritmo por período.</p></div><select id="ranking-period" class="search-input"><option value="daily" ${rankingPeriod==='daily'?'selected':''}>Diário</option><option value="monthly" ${rankingPeriod==='monthly'?'selected':''}>Mensal</option><option value="annual" ${rankingPeriod==='annual'?'selected':''}>Anual</option></select></div><div class="podium">${podiumOrder.map((member,index)=>`<article class="podium-card place-${index===1?'1':index===0?'2':'3'}"><span class="podium-place">${index===1?'1º':index===0?'2º':'3º'}</span>${avatarMarkup(member,'avatar podium-avatar')}<strong>${escapeHtml(member.name)}</strong><small>@${escapeHtml(member.username)}</small><b>${member.submitted} links</b><span>${member.approved} aprovados</span></article>`).join('')||'<div class="empty-state">O pódio aparece quando a equipe enviar links neste período.</div>'}</div><article class="panel ranking-chart-panel"><div class="panel-head"><h3>Links enviados por pessoa</h3><span>${rankingPeriod==='daily'?'Hoje':rankingPeriod==='monthly'?'Este mês':'Este ano'}</span></div>${bars.length?bars.map(member=>`<div class="rank-bar-row">${avatarMarkup(member,'avatar rank-avatar')}<span>${escapeHtml(member.name)}</span><div class="rank-track"><i style="width:${Math.max(4,member.submitted/max*100)}%"></i></div><b>${member.submitted}</b></div>`).join(''):'<div class="empty-state">Ainda não há envios neste período.</div>'}</article></section>`;
 }
-function accessView() {
-  return `<section><div class="section-title"><div><div class="eyebrow">SEGURANÇA E CONTROLE</div><h2>Histórico de acessos</h2><p>Endereço IP, dispositivo e horário dos últimos logins registrados.</p></div><div class="link-head-actions"><select id="access-user-filter" class="search-input"><option value="all">Todos os usuários</option>${members.filter(member=>member.role!=='admin').map(member=>`<option value="${escapeHtml(member.id)}" ${accessUserFilter===member.id?'selected':''}>${escapeHtml(member.name)}</option>`).join('')}</select><button class="soft-btn" id="download-backup">Baixar backup</button></div></div><article class="panel table-wrap"><table class="user-table"><thead><tr><th>Usuário</th><th>IP</th><th>Dispositivo</th><th>Data e hora</th></tr></thead><tbody>${accessRows.map(row=>`<tr><td>${escapeHtml(row.userName)} · @${escapeHtml(row.username)}</td><td>${escapeHtml(row.ip||'Não identificado')}</td><td>${escapeHtml(row.userAgent||'Não identificado')}</td><td>${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(row.createdAt))}</td></tr>`).join('')||'<tr><td colspan="4" class="empty-state">Ainda não há acessos registrados.</td></tr>'}</tbody></table></article></section>`;
+function summarizeAccessAgent(value) {
+  const ua = String(value || '');
+  const chrome = ua.match(/(?:Chrome|CriOS)\/([\d.]+)/i)?.[1];
+  const opera = ua.match(/(?:OPR|Opera)\/([\d.]+)/i)?.[1];
+  const edge = ua.match(/(?:EdgA|EdgiOS|Edg)\/([\d.]+)/i)?.[1];
+  const firefox = ua.match(/(?:Firefox|FxiOS)\/([\d.]+)/i)?.[1];
+  const samsung = ua.match(/SamsungBrowser\/([\d.]+)/i)?.[1];
+  const safari = ua.match(/Version\/([\d.]+).*Safari/i)?.[1];
+  let browser = 'Navegador não identificado';
+  if (edge) browser = `Microsoft Edge ${edge}`;
+  else if (opera) browser = `Opera ${opera}${chrome ? ` · Chromium ${chrome}` : ''}`;
+  else if (samsung) browser = `Samsung Internet ${samsung}`;
+  else if (firefox) browser = `Firefox ${firefox}`;
+  else if (chrome) browser = `Google Chrome ${chrome}`;
+  else if (safari) browser = `Safari ${safari}`;
+  let os = 'Sistema não identificado';
+  if (/Windows NT 10\.0/i.test(ua)) os = 'Windows 10/11';
+  else if (/Windows NT 6\.3/i.test(ua)) os = 'Windows 8.1';
+  else if (/Windows NT 6\.1/i.test(ua)) os = 'Windows 7';
+  else if (/Android/i.test(ua)) os = `Android${ua.match(/Android ([\d.]+)/i)?.[1] ? ` ${ua.match(/Android ([\d.]+)/i)[1]}` : ''}`;
+  else if (/(iPhone|iPad|iPod)/i.test(ua)) os = `iOS${ua.match(/OS ([\d_]+)/i)?.[1] ? ` ${ua.match(/OS ([\d_]+)/i)[1].replace(/_/g, '.')}` : ''}`;
+  else if (/Mac OS X/i.test(ua)) os = `macOS${ua.match(/Mac OS X ([\d_]+)/i)?.[1] ? ` ${ua.match(/Mac OS X ([\d_]+)/i)[1].replace(/_/g, '.')}` : ''}`;
+  else if (/CrOS/i.test(ua)) os = 'ChromeOS';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+  return { browser, os };
 }
-async function fetchLinks() {
+function accessView() {
+  return `<section><div class="section-title"><div><div class="eyebrow">SEGURANÇA E CONTROLE</div><h2>Histórico de acessos</h2><p>IP, navegador, sistema operacional, nome do computador informado e horário dos últimos logins.</p></div><div class="link-head-actions"><select id="access-user-filter" class="search-input"><option value="all">Todos os usuários</option>${members.filter(member=>member.role!=='admin').map(member=>`<option value="${escapeHtml(member.id)}" ${accessUserFilter===member.id?'selected':''}>${escapeHtml(member.name)}</option>`).join('')}</select><button class="soft-btn" id="download-backup">Baixar backup</button></div></div><article class="panel table-wrap"><table class="user-table access-table"><thead><tr><th>Usuário</th><th>IP</th><th>Navegador</th><th>Sistema</th><th>Nome do computador</th><th>Data e hora</th></tr></thead><tbody>${accessRows.map(row=>{const client=summarizeAccessAgent(row.userAgent);return `<tr><td>${escapeHtml(row.userName)} · @${escapeHtml(row.username)}</td><td>${escapeHtml(row.ip||'Não identificado')}</td><td>${escapeHtml(client.browser)}</td><td>${escapeHtml(client.os)}</td><td>${escapeHtml(row.deviceName||'Não informado')}</td><td>${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(row.createdAt))}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty-state">Ainda não há acessos registrados.</td></tr>'}</tbody></table></article><p class="access-history-note">O nome do computador é informado pela pessoa no login. Navegadores não fornecem o hostname real automaticamente.</p></section>`;
+}async function fetchLinks() {
   const isAdmin = current?.role === 'admin' && !dashboardData?.impersonating;
   const params = new URLSearchParams();
   if (isAdmin) params.set('userId', selectedLinkUser);

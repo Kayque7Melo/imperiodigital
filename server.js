@@ -346,7 +346,8 @@ async function handleApi(req, res, url) {
     }
     loginAttempts.delete(attemptKey);
     const created = createSession(user, Boolean(body.remember));
-    accessHistory.unshift({ id: crypto.randomUUID(), userId: user.id, username: user.username, ip: requestIp(req), userAgent: String(req.headers['user-agent'] || '').slice(0, 240), createdAt: new Date().toISOString() });
+    const deviceName = String(body.deviceName || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 64);
+    accessHistory.unshift({ id: crypto.randomUUID(), userId: user.id, username: user.username, ip: requestIp(req), userAgent: String(req.headers['user-agent'] || '').slice(0, 240), deviceName: deviceName || null, createdAt: new Date().toISOString() });
     if (accessHistory.length > 5000) accessHistory.length = 5000;
     saveList(ACCESS_FILE, accessHistory);
     return json(res, 200, { user: cleanUser(user), csrf: created.csrf }, { 'Set-Cookie': cookieHeader(created.sid, created.remember, process.env.NODE_ENV === 'production') });

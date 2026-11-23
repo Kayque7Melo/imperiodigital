@@ -216,8 +216,9 @@ function requestIp(req) {
   return (forwarded || req.socket?.remoteAddress || '').replace(/^::ffff:/, '').slice(0, 64);
 }
 
-const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
+const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.webm': 'video/webm', '.ico': 'image/x-icon' };
 const publicFiles = new Set(['/index.html', '/styles.css', '/app.js', '/logo-digital.png', '/logo-mark.png', '/favicon-equipe-digital.png', '/imperio-mark.png', '/imperio-logo.png']);
+const publicTutorialAsset = pathname => /^\/tutorial\/[a-z0-9_-]{1,64}\.(?:mp4|webm|png|jpe?g|webp)$/i.test(pathname);
 const securityHeaders = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; img-src 'self' data: blob:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
   'X-Content-Type-Options': 'nosniff',
@@ -688,7 +689,7 @@ async function handleAvatar(req, res, pathname) {
 async function handleRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   if (url.pathname.startsWith('/api/')) {
-    if (process.env.VERCEL && !databasePool) return json(res, 503, { error: 'Banco de dados não configurado. Defina DATABASE_URL nas variáveis da Vercel.' });
+    if (process.env.VERCEL && !databasePool) return json(res, 503, { error: 'Banco de dados não configurado. Defina SUPABASE_DB_URL como variável secreta na Vercel.' });
     return databasePool ? withDatabaseState(req, res, url) : handleApi(req, res, url).catch(error => { console.error(error); json(res, 500, { error: 'Erro interno. Tente novamente.' }); });
   }
   let pathname;
@@ -696,7 +697,7 @@ async function handleRequest(req, res) {
   if (pathname === '/') pathname = '/index.html';
   const avatarMatch = pathname.match(/^\/avatars\/([0-9a-f-]{36})\.(png|jpg|webp)$/);
   if (avatarMatch) return databasePool ? withDatabaseState(req, res, url, () => handleAvatar(req, res, pathname)) : handleAvatar(req, res, pathname);
-  if (!publicFiles.has(pathname)) return json(res, 404, { error: 'Não encontrado.' });
+  if (!publicFiles.has(pathname) && !publicTutorialAsset(pathname)) return json(res, 404, { error: 'Não encontrado.' });
   const file = path.resolve(PUBLIC_DIR, `.${pathname}`);
   if (!file.startsWith(PUBLIC_DIR + path.sep)) return json(res, 404, { error: 'Não encontrado.' });
   fs.readFile(file, (error, content) => {

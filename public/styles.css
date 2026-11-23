@@ -1095,6 +1095,45 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
   .page { padding-inline: 12px }
 }
 
+/* ── Team tutorial ─────────────────────────────────────────────────── */
+.tutorial-page { display: grid; gap: 20px; max-width: 1160px; margin: 0 auto }
+.tutorial-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; padding: 8px 0 4px }
+.tutorial-hero h1 { margin: 9px 0 8px; font: 800 clamp(27px,3vw,38px)/1.12 var(--display); letter-spacing: -.045em }
+.tutorial-hero p,.tutorial-video-copy p { max-width: 680px; margin: 0; color: var(--text2); line-height: 1.7 }
+.tutorial-official-link { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; text-decoration: none }
+.tutorial-notice { display: flex; align-items: flex-start; gap: 13px; padding: 17px 19px; border: 1px solid rgba(75,158,255,.24); border-radius: var(--r-md); background: linear-gradient(120deg,rgba(75,158,255,.11),rgba(75,158,255,.035)); color: var(--blue2) }
+.tutorial-notice > i { flex: 0 0 auto; margin-top: 2px }
+.tutorial-notice strong { color: var(--text); font-size: 13px }
+.tutorial-notice p { margin: 5px 0 0; color: var(--text2); font-size: 12px; line-height: 1.65 }
+.tutorial-video { display: grid; grid-template-columns: minmax(0,1fr) minmax(300px,.9fr); gap: 24px; align-items: center; padding: 22px }
+.tutorial-video-copy h2 { margin: 8px 0 9px; font: 700 20px/1.25 var(--display); letter-spacing: -.025em }
+.tutorial-video-copy code { color: var(--blue2); font-size: 11px }
+.tutorial-media { position: relative; min-width: 0 }
+.tutorial-video-placeholder { min-height: 205px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; padding: 20px; border: 1px dashed rgba(123,188,255,.34); border-radius: var(--r-md); background: radial-gradient(ellipse at 50% 0%,rgba(75,158,255,.13),transparent 70%),var(--surface2); text-align: center }
+.tutorial-video-placeholder[hidden] { display: none }
+.tutorial-player { display: none; width: 100%; max-height: 360px; aspect-ratio: 16/9; border-radius: var(--r-md); background: #000 }
+.tutorial-player.is-ready { display: block }
+.tutorial-video-placeholder > span { display: grid; place-items: center; width: 58px; height: 58px; border: 1px solid rgba(123,188,255,.3); border-radius: 50%; color: var(--blue2); background: rgba(75,158,255,.11) }
+.tutorial-video-placeholder strong { font: 700 14px var(--display) }
+.tutorial-video-placeholder small { color: var(--text3); font-size: 10px }
+.tutorial-section-title { margin: 4px 0 -5px }
+.tutorial-count { padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--text2); font-size: 11px }
+.tutorial-steps { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px }
+.tutorial-step { display: flex; align-items: flex-start; gap: 14px; padding: 18px; min-height: 160px }
+.tutorial-step-number { flex: 0 0 38px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; color: var(--blue2); background: rgba(75,158,255,.12); border: 1px solid rgba(75,158,255,.2); font: 800 12px var(--display) }
+.tutorial-step-content h3 { margin: 2px 0 7px; font: 700 14px/1.35 var(--display) }
+.tutorial-step-content p { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.68 }
+.tutorial-text-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; color: var(--blue2); font-size: 11px; font-weight: 700; text-decoration: none }
+.tutorial-text-link:hover { color: #fff }
+.tutorial-footer-note { padding: 15px 17px; border-left: 2px solid var(--blue); border-radius: 0 var(--r-sm) var(--r-sm) 0; color: var(--text2); background: var(--surface2); font-size: 12px; line-height: 1.6 }
+.tutorial-footer-note strong { color: var(--text) }
+@media (max-width: 780px) {
+  .tutorial-hero { align-items: flex-start; flex-direction: column }
+  .tutorial-video { grid-template-columns: 1fr; gap: 16px }
+  .tutorial-steps { grid-template-columns: 1fr }
+  .tutorial-step { min-height: 0 }
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms!important; animation-iteration-count: 1!important; transition-duration: .01ms!important }

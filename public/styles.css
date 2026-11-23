@@ -1479,3 +1479,18 @@ html[data-theme="light"] .record-type-btn { background: #f8fbff; border-color: r
 html[data-theme="light"] .record-type-btn.active { background: rgba(75,158,255,.10); border-color: rgba(75,158,255,.35) }
 html[data-theme="light"] .wa-user-chip { background: rgba(37,211,102,.08); border-color: rgba(37,211,102,.20) }
 html[data-theme="light"] .records-empty { border-color: rgba(0,0,0,.12) }
+
+/* ── CNPJ Banner (overview) ─────────────────────────────────────────── */
+.cnpj-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  margin-top: 12px; padding: 15px 18px;
+  border: 1px solid rgba(37,99,235,.25); border-radius: var(--r-md);
+  background: linear-gradient(110deg, rgba(37,99,235,.10), rgba(37,99,235,.04));
+  flex-wrap: wrap;
+}
+.cnpj-banner-left { display: flex; align-items: center; gap: 12px; min-width: 0 }
+.cnpj-banner-icon { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 11px; background: rgba(37,99,235,.12); overflow: hidden }
+.cnpj-banner strong { display: block; font-size: 13px; font-weight: 700 }
+.cnpj-banner p { margin: 3px 0 0; font-size: 11px; color: var(--text3) }
+html[data-theme="light"] .cnpj-banner { background: linear-gradient(110deg,rgba(37,99,235,.08),rgba(37,99,235,.02)); border-color: rgba(37,99,235,.20) }
+@media (max-width: 760px) { .cnpj-banner { flex-direction: column; align-items: flex-start } .cnpj-banner .primary-btn { width: 100% } }

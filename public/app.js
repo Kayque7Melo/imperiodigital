@@ -938,6 +938,7 @@ function renderDashboard() {
   document.querySelectorAll('[data-nav],[data-open-view]').forEach(button => button.addEventListener('click', async () => {
     const view = button.dataset.nav || button.dataset.openView;
     if (view === 'security') return notify('Sua sessão está protegida.');
+    if (view === 'access' && isAdmin) { try { await fetchInsights(); } catch (error) { notify(error.message); } }
     activeView = view;
     renderDashboard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -952,7 +953,6 @@ function renderDashboard() {
     if (!card) return;
     const isDaily = radio.value === 'daily';
     card.querySelector('.lvc-fields-per-link')?.toggleAttribute('hidden', isDaily);
-    if (view === 'access' && isAdmin) { try { await fetchInsights(); } catch (error) { notify(error.message); } }
     card.querySelector('.lvc-fields-daily')?.toggleAttribute('hidden', !isDaily);
     card.querySelectorAll('.lvc-tab').forEach(tab => tab.classList.toggle('active', tab.querySelector('input')?.value === radio.value));
   }));
@@ -973,6 +973,12 @@ function renderDashboard() {
   document.querySelector('#activity-user-filter')?.addEventListener('change',async event=>{activityUserFilter=event.currentTarget.value;await fetchInsights();renderDashboard();});
   document.querySelector('#ranking-period')?.addEventListener('change',async event=>{rankingPeriod=event.currentTarget.value;await fetchInsights();renderDashboard();});
   document.querySelector('#access-user-filter')?.addEventListener('change',async event=>{accessUserFilter=event.currentTarget.value;await fetchInsights();renderDashboard();});
+  document.querySelectorAll('[data-access-decision]').forEach(button=>button.addEventListener('click',async()=>{
+    const decision=button.dataset.accessDecision;
+    button.disabled=true;
+    try { await api(`/api/access-requests/${encodeURIComponent(button.dataset.requestId)}`,{method:'POST',body:JSON.stringify({decision}),headers:{'X-CSRF-Token':csrf}}); await fetchInsights(); renderDashboard(); notify(decision==='approve'?'Acesso aprovado. A pessoa deve repetir o login no mesmo dispositivo e IP.':'Solicitação de acesso recusada.'); }
+    catch(error){button.disabled=false;notify(error.message);}
+  }));
   document.querySelector('#user-search')?.addEventListener('input', event => {
     const query = event.currentTarget.value.toLowerCase().trim();
     document.querySelector('#user-rows').innerHTML = memberRows(members.filter(member => `${member.name} ${member.username} ${member.email || ''}`.toLowerCase().includes(query)));
@@ -988,12 +994,6 @@ function renderDashboard() {
   document.querySelector('#download-backup')?.addEventListener('click', async () => {
     try {
       const snapshot = await api('/api/admin/backup', { headers: { 'X-CSRF-Token': csrf } });
-  document.querySelectorAll('[data-access-decision]').forEach(button=>button.addEventListener('click',async()=>{
-    const decision=button.dataset.accessDecision;
-    button.disabled=true;
-    try { await api(`/api/access-requests/${encodeURIComponent(button.dataset.requestId)}`,{method:'POST',body:JSON.stringify({decision}),headers:{'X-CSRF-Token':csrf}}); await fetchInsights(); renderDashboard(); notify(decision==='approve'?'Acesso aprovado. A pessoa deve repetir o login no mesmo dispositivo e IP.':'Solicitação de acesso recusada.'); }
-    catch(error){button.disabled=false;notify(error.message);}
-  }));
       const file = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
       const anchor = document.createElement('a'); anchor.href = URL.createObjectURL(file); anchor.download = `imperio-digital-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(anchor.href), 1000); notify('Backup baixado com sucesso.');
     } catch (error) { notify(error.message); }

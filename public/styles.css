@@ -1543,7 +1543,7 @@ html[data-theme="light"] .link-value-card-v2 { background: #fff }
 .wa-assign-select { height: 32px; font-size: 11px; min-width: 160px; border-radius: 999px; padding: 0 28px 0 12px }
 
 /* Native dialog keeps the WhatsApp form centered in the viewport/top layer. */
-dialog.wa-number-modal { box-sizing: border-box; position: fixed; inset: 0; margin: auto; width: min(460px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+dialog.wa-number-modal { box-sizing: border-box; position: fixed; top: 50%; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%); margin: 0; width: min(460px, calc(100vw - 24px)); max-width: calc(100vw - 24px); height: auto; min-height: 0; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; animation: fade .18s ease both; }
 dialog.wa-number-modal:not([open]) { display: none }
 dialog.wa-number-modal::backdrop { background: rgba(0,0,0,.76); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px) }
 .wa-number-modal .modal-head { align-items: flex-start }
@@ -1558,7 +1558,7 @@ body.modal-open { overflow: hidden }
   .wa-card-header { flex-wrap: wrap; gap: 9px }
   .wa-card-date { order: 3 }
   .wa-assign-select { min-width: 130px }
-  dialog.wa-number-modal { width: calc(100vw - 20px); max-width: calc(100vw - 20px); max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 18px; border-radius: 16px }
+  dialog.wa-number-modal { top: 50%; left: 50%; width: calc(100vw - 20px); max-width: calc(100vw - 20px); max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 18px; border-radius: 16px }
   .wa-number-modal .modal-head { gap: 8px; margin-bottom: 12px }
   .wa-number-modal .modal-head h2 { font-size: 18px }
   .wa-number-modal .modal-field { margin: 10px 0 }

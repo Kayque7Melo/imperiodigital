@@ -769,13 +769,17 @@ async function handleApi(req, res, url) {
     return json(res, 200, { user: cleanUser(user) });
   }
   if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode gerenciar contas.' });
-  if (url.pathname === '/api/users' && req.method === 'GET') return json(res, 200, { users: users.map(member => ({ ...cleanUser(member), ...(member.role === 'admin' ? {} : { linkValueCents: linkRateFor(member), linkValue250Cents: member.linkValue250Cents ?? null, linkValue2000Cents: member.linkValue2000Cents ?? null, paymentMode: paymentModeFor(member), dailyRateCents: dailyRateFor(member) }) })) });
+  if (url.pathname === '/api/users' && req.method === 'GET') return json(res, 200, { users: users.map(member => ({ ...cleanUser(member), ...(member.role === 'admin' ? {} : { whatsappContact: member.whatsappContact || '', linkValueCents: linkRateFor(member), linkValue250Cents: member.linkValue250Cents ?? null, linkValue2000Cents: member.linkValue2000Cents ?? null, paymentMode: paymentModeFor(member), dailyRateCents: dailyRateFor(member) }) })) });
   if (url.pathname === '/api/users' && req.method === 'POST') {
     let body;
     try { body = await readBody(req); } catch (error) { return json(res, 400, { error: error.message }); }
     const name = String(body.name || '').trim();
     const username = String(body.username || '').trim().toLowerCase();
     const email = String(body.email || '').trim().toLowerCase();
+    const rawWhatsapp = String(body.whatsappContact || '').trim();
+    const whatsappDigits = rawWhatsapp.replace(/\D/g, '');
+    if (rawWhatsapp && (!/^[+\d\s().-]+$/.test(rawWhatsapp) || whatsappDigits.length < 8 || whatsappDigits.length > 15)) return json(res, 400, { error: 'Informe um WhatsApp válido com DDD e código do país quando necessário.' });
+    const whatsappContact = rawWhatsapp ? `${rawWhatsapp.startsWith('+') ? '+' : ''}${whatsappDigits}` : '';
     const password = String(body.password || '');
     if (name.length < 2 || name.length > 80) return json(res, 400, { error: 'Informe um nome entre 2 e 80 caracteres.' });
     if (!/^[a-z0-9._-]{3,32}$/.test(username)) return json(res, 400, { error: 'O login deve ter 3 a 32 caracteres: letras, números, ponto, hífen ou sublinhado.' });
@@ -783,7 +787,7 @@ async function handleApi(req, res, url) {
     if (password.length < 8 || password.length > 128) return json(res, 400, { error: 'A senha deve ter pelo menos 8 caracteres.' });
     if (users.some(item => item.username === username)) return json(res, 409, { error: 'Este login já está em uso.' });
     if (users.some(item => (item.email || '').toLowerCase() === email)) return json(res, 409, { error: 'Este e-mail já está cadastrado.' });
-    const created = { id: crypto.randomUUID(), name, username, email, role: 'user', active: true, avatar: '', linkValueCents: 5000, linkValue250Cents: 5000, linkValue2000Cents: 5000, paymentMode: 'per-link', dailyRateCents: 0, ...hashPassword(password), createdAt: new Date().toISOString() };
+    const created = { id: crypto.randomUUID(), name, username, email, whatsappContact, role: 'user', active: true, avatar: '', linkValueCents: 5000, linkValue250Cents: 5000, linkValue2000Cents: 5000, paymentMode: 'per-link', dailyRateCents: 0, ...hashPassword(password), createdAt: new Date().toISOString() };
     users.push(created); saveUsers(users);
     return json(res, 201, { user: cleanUser(created) });
   }

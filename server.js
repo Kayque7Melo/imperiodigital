@@ -323,7 +323,11 @@ function balanceFor(userId) { return links.filter(link => link.userId === userId
 function teamBalance() { return links.filter(link => link.status === 'approved' && !link.paidAt).reduce((total, link) => total + linkValueFor(link), 0); }
 function teamTotalPaid() { return payouts.reduce((t, p) => t + (p.amountCents || 0), 0); }
 function teamGrossRevenue() { return links.filter(link => link.status === 'approved').reduce((t, link) => t + linkValueFor(link), 0) + teamTotalPaid(); }
-function adminLinkRateFor(admin) { return Number.isInteger(admin?.adminLinkValueCents) && admin.adminLinkValueCents >= 0 ? admin.adminLinkValueCents : 5000; }
+function adminLinkRateFor(admin, bmLimit = '') {
+  const field = bmLimit === '2000' ? 'adminLinkValue2000Cents' : bmLimit === '250' ? 'adminLinkValue250Cents' : '';
+  if (field && Number.isInteger(admin?.[field]) && admin[field] >= 0) return admin[field];
+  return Number.isInteger(admin?.adminLinkValueCents) && admin.adminLinkValueCents >= 0 ? admin.adminLinkValueCents : 5000;
+}
 function adminApprovedLinkCount(admin) {
   const memberHistory = users.filter(member => member.role !== 'admin').reduce((total, member) => total + Math.max(0, Number(member.approvedLinks) || 0), 0);
   const recordedHistory = links.filter(link => link.status === 'approved').length + payouts.reduce((total, payout) => total + (Array.isArray(payout.linkIds) ? payout.linkIds.length : 0), 0);
@@ -494,7 +498,7 @@ async function handleApi(req, res, url) {
       { label: 'Aprovados', value: String(approvedCount).padStart(2, '0'), detail: 'links aprovados', icon: 'check' },
       { label: 'Pendentes', value: String(pendingCount).padStart(2, '0'), detail: 'aguardando análise', icon: 'clock' },
     ];
-    return json(res, 200, { user: cleanUser(user), stats, members: recent, admin: user.role === 'admin', ...(user.role === 'admin' ? { balanceCents: teamPending, totalPaidCents: totalPaid, grossRevenueCents: grossRevenue, personalBalanceCents, personalApprovedCount, adminLinkValueCents: adminLinkRateFor(user) } : {}), approvedCount, pendingCount, impersonating: found.session.adminMode });
+    return json(res, 200, { user: cleanUser(user), stats, members: recent, admin: user.role === 'admin', ...(user.role === 'admin' ? { balanceCents: teamPending, totalPaidCents: totalPaid, grossRevenueCents: grossRevenue, personalBalanceCents, personalApprovedCount, adminLinkValue250Cents: adminLinkRateFor(user, '250'), adminLinkValue2000Cents: adminLinkRateFor(user, '2000') } : {}), approvedCount, pendingCount, impersonating: found.session.adminMode });
   }
   if (url.pathname === '/api/return-admin' && req.method === 'POST') {
     const admin = users.find(item => item.id === found.session.originalUserId && item.role === 'admin' && item.active);
@@ -632,13 +636,16 @@ async function handleApi(req, res, url) {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode alterar o próprio valor por link.' });
     let body;
     try { body = await readBody(req); } catch (error) { return json(res, 400, { error: error.message }); }
-    const rateCents = Number(body.rateCents);
-    if (!Number.isInteger(rateCents) || rateCents < 1 || rateCents > 10_000_000) return json(res, 400, { error: 'O valor por link deve estar entre R$ 0,01 e R$ 100.000,00.' });
+    const rate250Cents = Number(body.rate250Cents);
+    const rate2000Cents = Number(body.rate2000Cents);
+    if (![rate250Cents, rate2000Cents].every(value => Number.isInteger(value) && value >= 0 && value <= 10_000_000)) return json(res, 400, { error: 'Informe valores entre R$ 0,00 e R$ 100.000,00 para cada limite.' });
     const approvedCount = adminApprovedLinkCount(user);
     const balanceCents = adminPersonalBalance(user);
-    user.adminLinkValueCents = rateCents;
+    user.adminLinkValue250Cents = rate250Cents;
+    user.adminLinkValue2000Cents = rate2000Cents;
+    user.adminLinkValueCents = rate250Cents;
     saveUsers(users);
-    return json(res, 200, { rateCents, approvedCount, balanceCents });
+    return json(res, 200, { rate250Cents, rate2000Cents, approvedCount, balanceCents });
   }
   const reanalysisId = url.pathname.match(/^\/api\/links\/([^/]+)\/reanalysis$/)?.[1];
   if (reanalysisId && req.method === 'POST') {
@@ -672,7 +679,7 @@ async function handleApi(req, res, url) {
     link.decidedBy = user.id;
     link.reason = body.status === 'rejected' ? String(body.reason || '').trim().slice(0, 240) : '';
     link.reanalysisRequestedAt = null;
-    if (body.status === 'approved') { const owner = users.find(item => item.id === link.userId); link.valueCents = linkRateFor(owner, link.bmLimit); link.salePriceCents = (bmSalePrices[link.bmLimit] || 0) > 0 ? bmSalePrices[link.bmLimit] : null; if (owner) owner.approvedLinks = (owner.approvedLinks || 0) + 1; if (admin) { admin.approvedLinksTotal = adminApprovedCountBefore + 1; admin.personalBalanceCents = adminPersonalBalanceBefore + adminLinkRateFor(admin); saveUsers(users); } }
+    if (body.status === 'approved') { const owner = users.find(item => item.id === link.userId); link.valueCents = linkRateFor(owner, link.bmLimit); link.salePriceCents = (bmSalePrices[link.bmLimit] || 0) > 0 ? bmSalePrices[link.bmLimit] : null; if (owner) owner.approvedLinks = (owner.approvedLinks || 0) + 1; if (admin) { admin.approvedLinksTotal = adminApprovedCountBefore + 1; admin.personalBalanceCents = adminPersonalBalanceBefore + adminLinkRateFor(admin, link.bmLimit); saveUsers(users); } }
     else { link.valueCents = 0; link.salePriceCents = null; }
     const activity = linkActivity.find(item=>item.id===link.id); if(activity){activity.status=link.status;saveList(ACTIVITY_FILE,linkActivity)}
     saveLinks(links);

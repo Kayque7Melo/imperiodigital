@@ -521,18 +521,21 @@ async function saveAdminPersonalRate(event) {
   const form = event.currentTarget;
   const error = document.querySelector('#admin-personal-rate-error');
   const button = form.querySelector('button[type="submit"]');
-  const amount = Number(new FormData(form).get('rate'));
-  const rateCents = Math.round(amount * 100);
+  const fields = new FormData(form);
+  const amount250 = Number(fields.get('rate250'));
+  const amount2000 = Number(fields.get('rate2000'));
+  const rate250Cents = Math.round(amount250 * 100);
+  const rate2000Cents = Math.round(amount2000 * 100);
   error.classList.remove('show');
-  if (!Number.isFinite(amount) || rateCents < 1 || rateCents > 10_000_000) {
-    error.textContent = 'Informe um valor entre R$ 0,01 e R$ 100.000,00.';
+  if (![amount250, amount2000].every(Number.isFinite) || [rate250Cents, rate2000Cents].some(value => value < 0 || value > 10_000_000)) {
+    error.textContent = 'Informe um valor entre R$ 0,00 e R$ 100.000,00 para cada tipo de BM.';
     error.classList.add('show');
     return;
   }
   button.disabled = true;
   try {
-    await api('/api/admin/personal-rate', { method: 'PATCH', body: JSON.stringify({ rateCents }) });
-    notify('Seu valor por link foi atualizado.');
+    await api('/api/admin/personal-rate', { method: 'PATCH', body: JSON.stringify({ rate250Cents, rate2000Cents }) });
+    notify('Seus valores por tipo de BM foram atualizados.');
     await refreshDashboardPreservingScroll();
   } catch (err) { error.textContent = err.message; error.classList.add('show'); }
   finally { button.disabled = false; }
@@ -656,10 +659,11 @@ async function saveLinkValue(userId) {
 }
 function adminPersonalSettingsView() {
   if (current?.role !== 'admin' || dashboardData?.impersonating) return '';
-  const rate = dashboardData?.adminLinkValueCents ?? 5000;
+  const rate250 = dashboardData?.adminLinkValue250Cents ?? dashboardData?.adminLinkValueCents ?? 5000;
+  const rate2000 = dashboardData?.adminLinkValue2000Cents ?? dashboardData?.adminLinkValueCents ?? 5000;
   const count = dashboardData?.personalApprovedCount ?? 0;
-  const balance = dashboardData?.personalBalanceCents ?? count * rate;
-  return `<section class="settings-card admin-personal-settings"><div class="settings-card-head"><span class="settings-icon">${svg('spark', 16)}</span><div><h3>Meu saldo pessoal por link</h3><p>Seu ganho pessoal é calculado para cada link aprovado da equipe.</p></div></div><p class="admin-personal-explainer">Cada aprovação soma este valor ao seu total pessoal. O total não diminui ao pagar os membros, e mudanças no valor valem para as próximas aprovações.</p><form id="admin-personal-rate-form" class="settings-form"><label class="modal-field"><span>Quanto recebo por link aprovado?</span><span class="currency-input"><b>R$</b><input name="rate" type="number" min="0.01" max="100000" step="0.01" value="${(rate / 100).toFixed(2)}" required></span></label><div class="admin-personal-balance"><small>Saldo pessoal total · ${count} links aprovados</small><strong>${money(balance)}</strong></div><div class="settings-form-actions"><div class="login-error" id="admin-personal-rate-error"></div><button class="primary-btn compact" type="submit">Salvar meu valor</button></div></form></section>`;
+  const balance = dashboardData?.personalBalanceCents ?? count * rate250;
+  return `<section class="settings-card admin-personal-settings"><div class="settings-card-head"><span class="settings-icon">${svg('spark', 16)}</span><div><h3>Meu saldo pessoal por link</h3><p>Configure quanto recebe por cada tipo de BM aprovado da equipe.</p></div></div><p class="admin-personal-explainer">Cada aprovação soma ao seu total pessoal o valor definido para o limite daquela BM. O saldo acumulado não muda quando você altera estes valores; a nova configuração vale para as próximas aprovações.</p><form id="admin-personal-rate-form" class="settings-form"><label class="modal-field"><span>Valor por link — BM 250</span><span class="currency-input"><b>R$</b><input name="rate250" type="number" min="0" max="100000" step="0.01" value="${(rate250 / 100).toFixed(2)}" required></span></label><label class="modal-field"><span>Valor por link — BM 2k</span><span class="currency-input"><b>R$</b><input name="rate2000" type="number" min="0" max="100000" step="0.01" value="${(rate2000 / 100).toFixed(2)}" required></span></label><div class="admin-personal-balance"><small>Saldo pessoal total · ${count} links aprovados</small><strong>${money(balance)}</strong></div><div class="settings-form-actions"><div class="login-error" id="admin-personal-rate-error"></div><button class="primary-btn compact" type="submit">Salvar meus valores</button></div></form></section>`;
 }
 function settingsView() {
   const theme = localStorage.getItem('eq_theme') === 'light' ? 'light' : 'dark';

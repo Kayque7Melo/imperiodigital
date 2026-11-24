@@ -14,6 +14,7 @@ let rankingPeriod = 'daily';
 let accessRows = [];
 let accessRequests = [];
 let recordsData = [];
+let recordsPeriod = 'month';
 let whatsappData = [];
 let accessUserFilter = 'all';
 let activityUserFilter = 'all';
@@ -671,7 +672,7 @@ function applyUiPreferences() {
 function overviewView(isAdmin, welcomeName) {
   const activityFilter=isAdmin?`<select class="search-input activity-user-filter" id="activity-user-filter"><option value="all" ${activityUserFilter==='all'?'selected':''}>Toda a equipe</option>${members.filter(item=>item.role!=='admin').map(item=>`<option value="${escapeHtml(item.id)}" ${activityUserFilter===item.id?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select>`:'';
   const metricsClass = isAdmin ? 'metrics metrics-admin-full' : 'metrics';
-  return `<section class="welcome"><div><div class="eyebrow">${isAdmin ? 'PAINEL DO ADMINISTRADOR' : 'SEU ESPAÇO DE TRABALHO'}</div><h1>Olá, ${welcomeName} <span style="color:var(--blue)">✦</span></h1><p>Um novo dia para fazer boas ideias acontecerem.</p></div><div class="welcome-actions">${isAdmin ? `<button class="soft-btn" data-open-view="accounts">${svg('users', 14)} Ver contas</button><button class="primary-btn compact" data-open-view="create-account">${svg('plus', 14)} Nova conta</button>` : `<button class="soft-btn" id="copy-login">${svg('copy', 14)} Copiar meu login</button>`}<button class="soft-btn" data-open-view="ranking">${svg('chart', 14)} Ranking</button><button class="soft-btn" data-open-view="links">${svg('link', 14)} ${isAdmin ? 'Analisar links' : 'Meus links'}</button></div></section><section class="${metricsClass}">${(dashboardData?.stats || []).map(metricCard).join('')}</section><section><div class="section-title"><div><h2>Ritmo da operação</h2><p>${activityData.links||0} links enviados · ${activityData.approved||0} aprovados nesta visão</p></div>${activityFilter}</div><div class="content-grid"><article class="panel"><div class="panel-head"><h3>Movimento dos links</h3><span>Últimos 7 dias</span></div>${chartMarkup()}</article><article class="panel"><div class="panel-head"><h3>Status do sistema</h3><span class="module-state"><i></i> Online</span></div><div class="module-list"><div class="module-row"><span class="module-icon">${svg('spark', 15)}</span><span class="module-copy"><strong>Equipe em movimento</strong><small>Ranking e atividade atualizados</small></span><span class="module-state"><i></i> Ativo</span></div><div class="module-row"><span class="module-icon purple">${svg('shield', 15)}</span><span class="module-copy"><strong>Acesso protegido</strong><small>Contas geridas pelo administrador</small></span><span class="module-state"><i></i> Seguro</span></div></div></article></div><div class="access-banner"><span class="access-icon">${svg('lock', 16)}</span><span class="access-copy"><strong>${isAdmin ? 'Acesso administrativo' : 'Acesso individual'}</strong><p>${isAdmin ? 'Métricas financeiras visíveis somente para o administrador.' : 'Seu login é pessoal. Fale com o administrador para dúvidas.'}</p></span>${isAdmin ? `<span class="role-pill">Administrador</span>` : `<span class="role-pill">${escapeHtml(current?.username)}</span>`}</div><div class="cnpj-banner"><div class="cnpj-banner-preview"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta pública de CNPJ" loading="lazy"></div><div class="cnpj-banner-copy"><span class="eyebrow">CNPJ</span><strong>Consulta pública de CNPJ</strong><p>Acesse a ferramenta de consulta com sua conta — sem precisar de senha.</p><button class="primary-btn compact" type="button" id="open-cnpj-portal">${svg('arrow', 14)} Acessar Consulta de CNPJ</button></div></div><a class="sms24-banner" href="https://sms24h.org/" target="_blank" rel="noopener noreferrer" aria-label="Abrir SMS24 em uma nova aba"><img src="/tutorial/banner-sms24.png" alt="Compras de números virtuais pelo SMS24" loading="lazy"><span class="sms24-banner-cta">Acessar SMS24 <i class="ic ri-arrow-right-up-line" aria-hidden="true"></i></span></a></section>`;
+  return `<section class="welcome"><div><div class="eyebrow">${isAdmin ? 'PAINEL DO ADMINISTRADOR' : 'SEU ESPAÇO DE TRABALHO'}</div><h1>Olá, ${welcomeName} <span style="color:var(--blue)">✦</span></h1><p>Um novo dia para fazer boas ideias acontecerem.</p></div><div class="welcome-actions">${isAdmin ? `<button class="soft-btn" data-open-view="accounts">${svg('users', 14)} Ver contas</button><button class="primary-btn compact" data-open-view="create-account">${svg('plus', 14)} Nova conta</button>` : `<button class="soft-btn" id="copy-login">${svg('copy', 14)} Copiar meu login</button>`}<button class="soft-btn" data-open-view="ranking">${svg('chart', 14)} Ranking</button><button class="soft-btn" data-open-view="links">${svg('link', 14)} ${isAdmin ? 'Analisar links' : 'Meus links'}</button></div></section><section class="${metricsClass}">${(dashboardData?.stats || []).map(metricCard).join('')}</section><section><div class="section-title"><div><h2>Ritmo da operação</h2><p>${activityData.links||0} links enviados · ${activityData.approved||0} aprovados nesta visão</p></div>${activityFilter}</div><div class="content-grid"><article class="panel"><div class="panel-head"><h3>Movimento dos links</h3><span>Últimos 7 dias</span></div>${chartMarkup()}</article><article class="panel"><div class="panel-head"><h3>Status do sistema</h3><span class="module-state"><i></i> Online</span></div><div class="module-list"><div class="module-row"><span class="module-icon">${svg('spark', 15)}</span><span class="module-copy"><strong>Equipe em movimento</strong><small>Ranking e atividade atualizados</small></span><span class="module-state"><i></i> Ativo</span></div><div class="module-row"><span class="module-icon purple">${svg('shield', 15)}</span><span class="module-copy"><strong>Acesso protegido</strong><small>Contas geridas pelo administrador</small></span><span class="module-state"><i></i> Seguro</span></div></div></article></div><div class="access-banner"><span class="access-icon">${svg('lock', 16)}</span><span class="access-copy"><strong>${isAdmin ? 'Acesso administrativo' : 'Acesso individual'}</strong><p>${isAdmin ? 'Métricas financeiras visíveis somente para o administrador.' : 'Seu login é pessoal. Fale com o administrador para dúvidas.'}</p></span>${isAdmin ? `<span class="role-pill">Administrador</span>` : `<span class="role-pill">${escapeHtml(current?.username)}</span>`}</div><div class="cnpj-banner"><div class="cnpj-banner-preview"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta pública de CNPJ" loading="lazy"></div><div class="cnpj-banner-copy"><span class="eyebrow">CNPJ</span><strong>Consulta pública de CNPJ</strong><p>Acesse a ferramenta de consulta com sua conta — sem precisar de senha.</p><button class="primary-btn compact" type="button" id="open-cnpj-portal">${svg('arrow', 14)} Acessar Consulta de CNPJ</button></div></div><a class="cnpj-banner sms24-card" href="https://sms24h.org/" target="_blank" rel="noopener noreferrer" aria-label="Abrir SMS24 em uma nova aba"><div class="cnpj-banner-preview"><img src="/tutorial/banner-sms24.png" alt="Compras de números virtuais pelo SMS24" loading="lazy"></div><span class="cnpj-banner-copy"><span class="eyebrow">SMS24</span><strong>Compra de números virtuais</strong><p>Acesse o SMS24 diretamente pelo espaço de trabalho.</p><span class="primary-btn compact sms24-link-button">${svg('arrow', 14)} Acessar SMS24 <i class="ic ri-arrow-right-up-line" aria-hidden="true"></i></span></span></a></section>`;
 }
 function tutorialView() {
   const steps = [
@@ -733,22 +734,85 @@ function recordFieldsMarkup(typeKey) {
   return `${has('phone') ? `<label class="modal-field"><span>Número comprado <span class="req-mark">*</span></span><input name="phone" placeholder="${t.phonePlaceholder}" required maxlength="30" inputmode="numeric"></label>` : ''}${has('email') ? `<label class="modal-field"><span>E-mail da conta <span class="req-mark">*</span></span><input name="email" type="email" placeholder="${t.emailPlaceholder}" required maxlength="254"></label>` : ''}${has('amount') ? `<label class="modal-field"><span>${t.amountLabel} <span class="req-mark">*</span></span><span class="currency-input"><b>R$</b><input name="amount" type="number" min="0.01" step="0.01" placeholder="0,00" required></span></label>` : ''}${has('desc') ? `<label class="modal-field rec-desc-field"><span>${t.descLabel}</span><input name="description" placeholder="${t.descPlaceholder}" maxlength="300" required></label>` : ''}`;
 }
 
+function recordPeriodRange(period, now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (period === 'week') { const mondayOffset = (start.getDay() + 6) % 7; start.setDate(start.getDate() - mondayOffset); }
+  else if (period === 'month') start.setDate(1);
+  else if (period === 'year') { start.setMonth(0, 1); }
+  else return null;
+  const end = new Date(start);
+  if (period === 'week') end.setDate(end.getDate() + 7);
+  else if (period === 'month') end.setMonth(end.getMonth() + 1);
+  else end.setFullYear(end.getFullYear() + 1);
+  return { start, end };
+}
+
+function recordTypeKey(record) { return String(record?.type || '').toLowerCase(); }
+function recordAmount(record) { const amount = Number(record?.amountCents); return Number.isFinite(amount) && amount > 0 ? amount : 0; }
+function isExpenseRecord(record) { return ['whatsapp', 'sms24', 'adspower', 'expense', 'payment', 'other'].includes(recordTypeKey(record)); }
+function recordsForPeriod(period = recordsPeriod) {
+  const range = recordPeriodRange(period);
+  return recordsData.filter(record => {
+    if (!range) return true;
+    const date = new Date(record.createdAt);
+    return Number.isFinite(date.getTime()) && date >= range.start && date < range.end;
+  });
+}
+function recordsChartBuckets(period) {
+  const now = new Date();
+  if (period === 'week') {
+    const monday = recordPeriodRange('week').start;
+    return Array.from({ length: 7 }, (_, index) => { const date = new Date(monday); date.setDate(date.getDate() + index); return { start: date, next: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1), label: new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(date).replace('.', '') }; });
+  }
+  if (period === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const count = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return Array.from({ length: count }, (_, index) => { const date = new Date(start); date.setDate(index + 1); return { start: date, next: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1), label: String(index + 1) }; });
+  }
+  const base = period === 'year' ? new Date(now.getFullYear(), 0, 1) : new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  return Array.from({ length: 12 }, (_, index) => { const start = new Date(base.getFullYear(), base.getMonth() + index, 1); const next = new Date(start.getFullYear(), start.getMonth() + 1, 1); return { start, next, label: new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(start).replace('.', '') }; });
+}
+function recordsChartMarkup(records, period) {
+  const buckets = recordsChartBuckets(period);
+  const values = buckets.map(bucket => records.reduce((totals, record) => {
+    const date = new Date(record.createdAt); if (!Number.isFinite(date.getTime()) || date < bucket.start || date >= bucket.next) return totals;
+    const amount = recordAmount(record);
+    if (isExpenseRecord(record)) totals.expense += amount;
+    if (recordTypeKey(record) === 'revenue') totals.revenue += amount;
+    return totals;
+  }, { expense: 0, revenue: 0 }));
+  const max = Math.max(1, ...values.flatMap(value => [value.expense, value.revenue]));
+  const items = values.map((value, index) => `<div class="records-chart-item" title="${escapeHtml(buckets[index].label)} · Gastos ${money(value.expense)} · Lucros ${money(value.revenue)}"><div class="records-chart-pair"><span class="records-chart-bar expense" style="--bar-height:${Math.max(value.expense ? 3 : 0, value.expense / max * 112)}px"></span><span class="records-chart-bar revenue" style="--bar-height:${Math.max(value.revenue ? 3 : 0, value.revenue / max * 112)}px"></span></div><small>${escapeHtml(buckets[index].label)}</small></div>`).join('');
+  return `<div class="records-chart-scroll"><div class="records-chart-bars">${items}</div></div>`;
+}
+
 function recordsView() {
-  const totalGasto   = recordsData.filter(r => ['whatsapp','sms24','adspower','expense','payment'].includes(r.type) && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
-  const totalLucro   = recordsData.filter(r => r.type === 'revenue' && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
+  const visibleRecords = recordsForPeriod();
+  const totalGasto = visibleRecords.reduce((sum, record) => sum + (isExpenseRecord(record) ? recordAmount(record) : 0), 0);
+  const totalLucro = visibleRecords.reduce((sum, record) => sum + (recordTypeKey(record) === 'revenue' ? recordAmount(record) : 0), 0);
   const saldo        = totalLucro - totalGasto;
+  const expenseGroups = [
+    ['whatsapp', 'WhatsApp'], ['sms24', 'SMS24'], ['adspower', 'Ads Power'], ['expense', 'Despesas'], ['payment', 'Despesas antigas'], ['other', 'Outros'],
+  ].map(([type, label]) => ({ label, cents: visibleRecords.reduce((sum, record) => sum + (recordTypeKey(record) === type ? recordAmount(record) : 0), 0) })).filter(item => item.cents > 0);
+  const expenseBreakdown = expenseGroups.length ? expenseGroups.map(item => `<div class="records-breakdown-row"><span>${escapeHtml(item.label)}</span><strong>${money(item.cents)}</strong></div>`).join('') : '<div class="records-breakdown-empty">Sem gastos neste período.</div>';
+  const periodLabel = { week: 'esta semana', month: 'este mês', year: 'este ano', all: 'todo o histórico' }[recordsPeriod];
 
   return `<section class="admin-section records-page">
     <div class="section-title">
       <div><div class="eyebrow">ADMINISTRAÇÃO</div><h2>Registros</h2><p>Controle de investimentos, gastos, compras e lucros da operação.</p></div>
       <div class="records-summary">
-        <span class="rec-sum-item gasto"><span class="rec-sum-label">Gasto</span><strong>${money(totalGasto)}</strong></span>
+        <span class="rec-sum-item gasto"><span class="rec-sum-label">Gastos · ${periodLabel}</span><strong>${money(totalGasto)}</strong></span>
         <span class="rec-sum-sep">·</span>
-        <span class="rec-sum-item lucro"><span class="rec-sum-label">Lucro</span><strong>${money(totalLucro)}</strong></span>
+        <span class="rec-sum-item lucro"><span class="rec-sum-label">Lucros · ${periodLabel}</span><strong>${money(totalLucro)}</strong></span>
         <span class="rec-sum-sep">·</span>
-        <span class="rec-sum-item saldo ${saldo >= 0 ? 'pos' : 'neg'}"><span class="rec-sum-label">Saldo</span><strong>${money(saldo)}</strong></span>
+        <span class="rec-sum-item saldo ${saldo >= 0 ? 'pos' : 'neg'}"><span class="rec-sum-label">Saldo · ${periodLabel}</span><strong>${saldo < 0 ? '− ' : ''}${money(Math.abs(saldo))}</strong></span>
       </div>
     </div>
+
+    <section class="records-analytics">
+      <article class="panel records-chart-panel"><div class="panel-head records-analytics-head"><div><h3>${svg('chart', 15)} Gastos e lucros</h3><span>Movimento financeiro por período</span></div><label class="records-period-control"><span>Período</span><select class="search-input" id="records-period-filter"><option value="week" ${recordsPeriod === 'week' ? 'selected' : ''}>Esta semana</option><option value="month" ${recordsPeriod === 'month' ? 'selected' : ''}>Este mês</option><option value="year" ${recordsPeriod === 'year' ? 'selected' : ''}>Este ano</option><option value="all" ${recordsPeriod === 'all' ? 'selected' : ''}>Todo o histórico</option></select></label></div><div class="records-chart-legend"><span><i class="expense"></i> Gastos</span><span><i class="revenue"></i> Lucros</span></div>${recordsChartMarkup(visibleRecords, recordsPeriod)}</article>
+      <article class="panel records-breakdown"><div class="panel-head"><div><h3>${svg('money', 15)} Divisão de gastos</h3><span>${periodLabel}</span></div><strong>${money(totalGasto)}</strong></div><div class="records-breakdown-list">${expenseBreakdown}</div></article>
+    </section>
 
     <article class="panel records-form-panel">
       <div class="panel-head"><h3>${svg('plus', 14)} Novo registro</h3><span>Escolha o tipo para ver os campos correspondentes</span></div>
@@ -775,7 +839,7 @@ function recordsView() {
     </article>
 
     <div class="records-list" id="records-list">
-      ${recordsData.length ? recordsData.map(r => recordCardHtml(r)).join('') : `<div class="records-empty"><strong>Nenhum registro ainda</strong><p>Escolha um tipo acima para começar a registrar.</p></div>`}
+      ${visibleRecords.length ? visibleRecords.map(r => recordCardHtml(r)).join('') : `<div class="records-empty"><strong>Nenhum registro neste período</strong><p>Escolha outro intervalo ou adicione um novo registro.</p></div>`}
     </div>
   </section>`;
 }
@@ -820,8 +884,8 @@ function whatsappView() {
   </section>
 
   <div id="wa-add-modal" hidden>
-    <div class="modal-backdrop" id="wa-modal-backdrop">
-      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="wa-modal-title">
+    <div class="modal-backdrop wa-modal-backdrop" id="wa-modal-backdrop">
+      <section class="modal wa-number-modal" role="dialog" aria-modal="true" aria-labelledby="wa-modal-title">
         <div class="modal-head">
           <div><div class="eyebrow">WHATSAPP</div><h2 id="wa-modal-title">Adicionar número</h2><p>Informe o número e o grupo ao qual pertence.</p></div>
           <button class="icon-btn" id="wa-modal-close" aria-label="Fechar">${svg('close')}</button>
@@ -1031,14 +1095,7 @@ function renderDashboard() {
     try {
       const record = await api('/api/records', { method: 'POST', body: JSON.stringify({ type, description, category, phone, email, amountCents }) });
       recordsData.unshift(record.record);
-      const list = document.querySelector('#records-list');
-      if (list) { if (list.querySelector('.records-empty')) list.innerHTML = ''; list.insertAdjacentHTML('afterbegin', recordCardHtml(record.record)); }
-      form.reset();
-      // Reset dynamic fields back to whatsapp
-      document.querySelectorAll('.record-type-btn').forEach(l => l.classList.remove('active'));
-      document.querySelector('.record-type-btn')?.classList.add('active');
-      const firstInput = document.querySelector('#records-type-grid input[name="rec-type"]');
-      if (firstInput) { firstInput.checked = true; firstInput.closest('.record-type-btn')?.click(); }
+      renderDashboard();
       notify('Registro salvo.');
     } catch (err) { errorEl.textContent = err.message; errorEl.classList.add('show'); }
     finally { btn.disabled = false; }
@@ -1058,6 +1115,7 @@ function renderDashboard() {
   }));
   // Set initial active type
   document.querySelector('.record-type-btn')?.click();
+  document.querySelector('#records-period-filter')?.addEventListener('change', event => { recordsPeriod = event.currentTarget.value; renderDashboard(); });
   document.querySelector('#records-list')?.addEventListener('click', async event => {
     const btn = event.target.closest('[data-delete-record]');
     if (!btn) return;
@@ -1066,17 +1124,21 @@ function renderDashboard() {
     try {
       await api(`/api/records/${encodeURIComponent(id)}`, { method: 'DELETE', body: '{}' });
       recordsData = recordsData.filter(r => r.id !== id);
-      btn.closest('.record-card')?.remove();
-      if (!document.querySelector('.record-card')) document.querySelector('#records-list').innerHTML = `<div class="records-empty"><strong>Nenhum registro ainda</strong><p>Use o formulário acima para registrar um gasto, compra ou lucro.</p></div>`;
+      renderDashboard();
       notify('Registro excluído.');
     } catch (err) { notify(err.message); }
   });
   // ── WhatsApp bindings ───────────────────────────────────────────────────
   document.querySelector('#wa-add-btn')?.addEventListener('click', () => {
-    document.querySelector('#wa-add-modal').hidden = false;
+    const overlay = document.querySelector('#wa-add-modal');
+    document.body.append(overlay);
+    overlay.hidden = false;
+    document.body.classList.add('modal-open');
+    document.addEventListener('keydown', onWaEscape);
     document.querySelector('#wa-phone')?.focus();
   });
-  const closeWaModal = () => { document.querySelector('#wa-add-modal').hidden = true; document.querySelector('#wa-add-form')?.reset(); document.querySelector('#wa-modal-error')?.classList.remove('show'); };
+  const closeWaModal = () => { const overlay = document.querySelector('#wa-add-modal'); if (!overlay) return; overlay.hidden = true; document.body.classList.remove('modal-open'); document.removeEventListener('keydown', onWaEscape); document.querySelector('.page')?.append(overlay); document.querySelector('#wa-add-form')?.reset(); document.querySelector('#wa-modal-error')?.classList.remove('show'); };
+  const onWaEscape = event => { if (event.key === 'Escape') closeWaModal(); };
   document.querySelector('#wa-modal-close')?.addEventListener('click', closeWaModal);
   document.querySelector('#wa-modal-cancel')?.addEventListener('click', closeWaModal);
   document.querySelector('#wa-modal-backdrop')?.addEventListener('click', event => { if (event.target === event.currentTarget) closeWaModal(); });

@@ -920,9 +920,13 @@ async function handleApi(req, res, url) {
     if (whatsappNumbers.some(n => n.phone === phone)) return json(res, 409, { error: 'Este número já está cadastrado.' });
     const label = String(body.label || '').trim().slice(0, 80);
     const groupName = String(body.groupName || '').trim().slice(0, 80);
-    const number = { id: crypto.randomUUID(), phone, label, groupName, assignedUsers: [], createdBy: user.id, createdAt: new Date().toISOString() };
+    const requestedUserIds = Array.isArray(body.userIds) ? [...new Set(body.userIds.map(id => String(id).slice(0, 80)))].slice(0, 200) : [];
+    const assignedMembers = requestedUserIds.map(memberId => users.find(member => member.id === memberId && member.role !== 'admin' && member.active));
+    if (assignedMembers.some(member => !member)) return json(res, 400, { error: 'Revise a seleção: um ou mais funcionários não estão disponíveis.' });
+    const number = { id: crypto.randomUUID(), phone, label, groupName, assignedUsers: requestedUserIds, createdBy: user.id, createdAt: new Date().toISOString() };
     whatsappNumbers.unshift(number);
     saveList(WHATSAPP_FILE, whatsappNumbers);
+    for (const member of assignedMembers) addNotification(member.id, 'whatsapp-assigned', 'WhatsApp atribuído', `Você recebeu acesso ao número +${phone}${label ? ' (' + label + ')' : ''}.`, { whatsappId: number.id });
     for (const admin of users.filter(u => u.role === 'admin' && u.active)) {
       addNotification(admin.id, 'whatsapp-added', 'Número WhatsApp adicionado', `+${phone}${label ? ' · ' + label : ''} cadastrado por ${user.name}.`, { whatsappId: number.id });
     }

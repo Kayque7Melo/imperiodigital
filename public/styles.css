@@ -1543,14 +1543,37 @@ html[data-theme="light"] .link-value-card-v2 { background: #fff }
 .wa-assign-select { height: 32px; font-size: 11px; min-width: 160px; border-radius: 999px; padding: 0 28px 0 12px }
 
 /* Native dialog keeps the WhatsApp form centered in the viewport/top layer. */
-dialog.wa-number-modal { box-sizing: border-box; position: fixed; top: 50%; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%); margin: 0; width: min(460px, calc(100vw - 24px)); max-width: calc(100vw - 24px); height: auto; min-height: 0; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; animation: fade .18s ease both; }
-dialog.wa-number-modal:not([open]) { display: none }
+dialog.wa-number-modal { display: block!important; box-sizing: border-box; position: fixed; top: 50%; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%); margin: 0; width: min(520px, calc(100vw - 24px)); max-width: calc(100vw - 24px); height: auto; min-height: 0; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 24px; color: var(--text); text-align: left; animation: fade .18s ease both; }
+dialog.wa-number-modal:not([open]) { display: none!important }
 dialog.wa-number-modal::backdrop { background: rgba(0,0,0,.76); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px) }
-.wa-number-modal .modal-head { align-items: flex-start }
+.wa-number-modal .modal-head { display: flex; width: 100%; align-items: flex-start; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 17px }
+.wa-number-modal .modal-head > div { flex: 1; min-width: 0 }
+.wa-number-modal .modal-head h2 { color: var(--text); font-size: 21px }
+.wa-number-modal .modal-head p { color: var(--text3) }
 .wa-number-modal .modal-head > button { flex: none }
-.wa-number-modal form, .wa-number-modal .modal-field, .wa-number-modal input { box-sizing: border-box; width: 100%; min-width: 0 }
-.wa-number-modal .modal-actions { flex-wrap: wrap }
+.wa-number-modal form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; width: 100%; min-width: 0 }
+.wa-number-modal .modal-field { display: grid; width: 100%; min-width: 0; gap: 7px; margin: 0 }
+.wa-number-modal .modal-field label { color: var(--text2); font-size: 11px; font-weight: 600 }
+.wa-number-modal input:not([type="checkbox"]) { box-sizing: border-box; width: 100%; min-width: 0; height: 44px }
+.wa-number-modal .modal-actions { flex-wrap: wrap; margin: 4px 0 0; padding-top: 15px; border-top: 1px solid var(--border) }
 .wa-number-modal .modal-actions > button { min-width: 110px }
+.wa-team-picker { display: grid; gap: 9px; padding: 13px; border: 1px solid var(--border); border-radius: 13px; background: rgba(75,158,255,.035) }
+.wa-team-picker-head { display: grid; gap: 3px }
+.wa-team-picker-head > span { color: var(--text); font-size: 11px; font-weight: 700 }
+.wa-team-picker-head small { color: var(--text3); font-size: 10px }
+.wa-team-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; max-height: 176px; overflow-y: auto; overscroll-behavior: contain }
+.wa-team-option { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); cursor: pointer; transition: border-color .16s, background .16s }
+.wa-team-option:has(input:checked) { border-color: rgba(75,158,255,.55); background: rgba(75,158,255,.10) }
+.wa-team-option > input { width: 15px; height: 15px; flex: none; margin: 0; accent-color: var(--blue); cursor: pointer }
+.wa-team-option-profile { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1 }
+.wa-team-avatar { width: 27px; height: 27px; flex: none; font-size: 9px }
+.wa-team-option-profile > span:last-child { display: grid; min-width: 0; gap: 2px }
+.wa-team-option-profile strong, .wa-team-option-profile small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.wa-team-option-profile strong { color: var(--text); font-size: 10px }
+.wa-team-option-profile small { color: var(--text3); font-size: 9px }
+.wa-team-option > i { display: none; color: var(--blue2); font-style: normal }
+.wa-team-option:has(input:checked) > i { display: inline-flex }
+.wa-team-empty { grid-column: 1/-1; margin: 3px 0; color: var(--text3); font-size: 10px }
 body.modal-open { overflow: hidden }
 
 /* Responsive WA */
@@ -1564,6 +1587,8 @@ body.modal-open { overflow: hidden }
   .wa-number-modal .modal-field { margin: 10px 0 }
   .wa-number-modal .modal-actions { flex-wrap: wrap; margin-top: 14px }
   .wa-number-modal .modal-actions > button { flex: 1; justify-content: center }
+  .wa-team-picker { padding: 11px }
+  .wa-team-options { grid-template-columns: 1fr; max-height: 150px }
 }
 
 /* Light theme */

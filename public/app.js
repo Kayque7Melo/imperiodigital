@@ -929,6 +929,10 @@ function whatsappView() {
       <div class="modal-field"><label for="wa-phone">Número (somente dígitos)</label><input id="wa-phone" name="phone" placeholder="5511999999999" required maxlength="20" inputmode="numeric"></div>
       <div class="modal-field"><label for="wa-label">Nome / identificação</label><input id="wa-label" name="label" placeholder="Ex.: Conta principal" maxlength="80"></div>
       <div class="modal-field"><label for="wa-group">Grupo</label><input id="wa-group" name="groupName" placeholder="Ex.: Grupo A, Equipe Norte…" maxlength="80"></div>
+      <section class="wa-team-picker" aria-labelledby="wa-team-title">
+        <div class="wa-team-picker-head"><span id="wa-team-title">Pessoas responsáveis</span><small>Selecione quem utilizará este número.</small></div>
+        <div class="wa-team-options">${team.some(member => member.active) ? team.filter(member => member.active).map(member => `<label class="wa-team-option"><input type="checkbox" name="userIds" value="${escapeHtml(member.id)}"><span class="wa-team-option-profile">${avatarMarkup(member, 'avatar wa-team-avatar')}<span><strong>${escapeHtml(member.name)}</strong><small>@${escapeHtml(member.username)}</small></span></span><i>${svg('check', 13)}</i></label>`).join('') : '<p class="wa-team-empty">Nenhum funcionário ativo para atribuir.</p>'}</div>
+      </section>
       <div class="login-error" id="wa-modal-error"></div>
       <div class="modal-actions">
         <button class="soft-btn" type="button" id="wa-modal-cancel">Cancelar</button>
@@ -940,7 +944,7 @@ function whatsappView() {
 
 function waNumberCardHtml(n, team) {
   const assignedUsers = (n.assignedUsers || []).map(id => team.find(m => m.id === id)).filter(Boolean);
-  const unassigned = team.filter(m => !(n.assignedUsers || []).includes(m.id));
+  const unassigned = team.filter(m => m.active && !(n.assignedUsers || []).includes(m.id));
   return `<article class="panel wa-number-card" data-wa-id="${escapeHtml(n.id)}">
     <div class="wa-card-header">
       <span class="wa-icon-wrap">${recordTypeSvg('whatsapp', 28)}</span>
@@ -1199,7 +1203,7 @@ function renderDashboard() {
     const errEl = document.querySelector('#wa-modal-error');
     btn.disabled = true; errEl.classList.remove('show');
     try {
-      const result = await api('/api/whatsapp', { method: 'POST', body: JSON.stringify({ phone: fields.get('phone'), label: fields.get('label'), groupName: fields.get('groupName') }) });
+      const result = await api('/api/whatsapp', { method: 'POST', body: JSON.stringify({ phone: fields.get('phone'), label: fields.get('label'), groupName: fields.get('groupName'), userIds: fields.getAll('userIds') }) });
       whatsappData.unshift(result.number);
       closeWaModal();
       await refreshDashboardPreservingScroll();

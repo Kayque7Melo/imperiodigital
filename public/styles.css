@@ -1544,12 +1544,14 @@ html[data-theme="light"] .link-value-card-v2 { background: #fff }
 
 /* Modal overlay for WhatsApp */
 #wa-add-modal[hidden] { display: none }
-#wa-add-modal:not([hidden]) { display: block }
-.wa-modal-backdrop { position: fixed!important; inset: 0!important; z-index: 1000!important; display: grid!important; place-items: center; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) }
-.wa-number-modal { box-sizing: border-box; width: min(100%, 460px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; margin: auto; }
+#wa-add-modal:not([hidden]) { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; box-sizing: border-box; overflow: hidden; isolation: isolate }
+.wa-modal-backdrop { position: absolute!important; inset: 0!important; z-index: 1!important; display: grid!important; place-items: center; box-sizing: border-box; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); background: rgba(0,0,0,.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px) }
+.wa-number-modal { box-sizing: border-box; width: min(100%, 460px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; margin: auto; position: relative; }
 .wa-number-modal .modal-head { align-items: flex-start }
 .wa-number-modal .modal-head > button { flex: none }
 .wa-number-modal form, .wa-number-modal .modal-field, .wa-number-modal input { box-sizing: border-box; width: 100%; min-width: 0 }
+.wa-number-modal .modal-actions { flex-wrap: wrap }
+.wa-number-modal .modal-actions > button { min-width: 110px }
 body.modal-open { overflow: hidden }
 
 /* Responsive WA */
@@ -1558,7 +1560,7 @@ body.modal-open { overflow: hidden }
   .wa-card-date { order: 3 }
   .wa-assign-select { min-width: 130px }
   .wa-modal-backdrop { place-items: center; padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) }
-  .wa-number-modal { width: 100%; max-height: calc(100dvh - 20px); padding: 18px; border-radius: 16px }
+  .wa-number-modal { width: 100%; max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 18px; border-radius: 16px }
   .wa-number-modal .modal-head { gap: 8px; margin-bottom: 12px }
   .wa-number-modal .modal-head h2 { font-size: 18px }
   .wa-number-modal .modal-field { margin: 10px 0 }

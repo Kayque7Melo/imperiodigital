@@ -141,7 +141,8 @@ if (linkFingerprints.size) saveList(LINK_FINGERPRINTS_FILE, [...linkFingerprints
 
 function initialDatabaseState() {
   if (!users.some(item => item.role === 'admin')) users.unshift({ id: crypto.randomUUID(), name: ADMIN_NAME, username: ADMIN_USERNAME, email: ADMIN_EMAIL, role: 'admin', active: true, avatar: '', ...hashPassword(ADMIN_PASSWORD), createdAt: new Date().toISOString() });
-  return { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
+  // This is a fresh app-state store: never import old local records into the new Supabase project.
+  return { users, links, notifications, payouts, records: [], whatsappNumbers: [], linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
 }
 async function withDatabaseState(req, res, url, runHandler = handleApi) {
   let client = null;
@@ -164,6 +165,8 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     links = Array.isArray(state.links) ? state.links : [];
     notifications = Array.isArray(state.notifications) ? state.notifications : [];
     payouts = Array.isArray(state.payouts) ? state.payouts : [];
+    records = Array.isArray(state.records) ? state.records : [];
+    whatsappNumbers = Array.isArray(state.whatsappNumbers) ? state.whatsappNumbers : [];
     linkFingerprints = new Set(Array.isArray(state.linkFingerprints) ? state.linkFingerprints : []);
     linkActivity = Array.isArray(state.linkActivity) ? state.linkActivity : [];
     accessHistory = Array.isArray(state.accessHistory) ? state.accessHistory : [];
@@ -175,7 +178,7 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     res.end = function(...args) {
       responseCompletion = (async () => {
         try {
-          const next = { users, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
+          const next = { users, links, notifications, payouts, records, whatsappNumbers, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
           await client.query('update equipe_digital_private.app_state set state = $1::jsonb, updated_at = now() where id = 1', [JSON.stringify(next)]);
           await client.query('COMMIT');
           client.release(); activeDatabaseClient = null;
@@ -588,7 +591,7 @@ async function handleApi(req, res, url) {
   if (url.pathname === '/api/admin/backup' && req.method === 'GET') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode baixar o backup.' });
     const safeUsers = users.map(({ hash, salt, ...profile }) => profile);
-    const snapshot = { application: 'Império Digital', createdAt: new Date().toISOString(), users: safeUsers, links, notifications, payouts, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory: accessHistory.map(({ deviceKeyHash, ...item }) => item), accessRequests: accessRequests.map(({ fingerprint, ...item }) => item) };
+    const snapshot = { application: 'Império Digital', createdAt: new Date().toISOString(), users: safeUsers, links, notifications, payouts, records, whatsappNumbers, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory: accessHistory.map(({ deviceKeyHash, ...item }) => item), accessRequests: accessRequests.map(({ fingerprint, ...item }) => item) };
     return json(res, 200, snapshot, { 'Content-Disposition': `attachment; filename="imperio-digital-backup-${new Date().toISOString().slice(0,10)}.json"` });
   }
   if (url.pathname === '/api/payouts' && req.method === 'POST') {
@@ -821,15 +824,20 @@ async function handleApi(req, res, url) {
   if (url.pathname === '/api/records' && req.method === 'POST') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode criar registros.' });
     let body; try { body = await readBody(req); } catch (e) { return json(res, 400, { error: e.message }); }
-    const VALID_TYPES = ['whatsapp', 'sms24', 'adspower', 'payment', 'revenue', 'other'];
+    const VALID_TYPES = ['whatsapp', 'sms24', 'adspower', 'payment', 'expense', 'revenue', 'other'];
     const type = String(body.type || '').toLowerCase();
     if (!VALID_TYPES.includes(type)) return json(res, 400, { error: 'Tipo de registro inválido.' });
     const description = String(body.description || '').trim().slice(0, 300);
     const amountCents = body.amountCents !== undefined ? Number(body.amountCents) : null;
     if (amountCents !== null && (!Number.isFinite(amountCents) || amountCents < 0)) return json(res, 400, { error: 'Valor inválido.' });
     const phone = String(body.phone || '').trim().slice(0, 30);
+    const email = String(body.email || '').trim().slice(0, 254).toLowerCase();
     const category = String(body.category || '').trim().slice(0, 80);
-    const record = { id: crypto.randomUUID(), type, category, description, phone, amountCents, createdBy: user.id, createdByName: user.name, createdAt: new Date().toISOString() };
+    if (['sms24', 'adspower'].includes(type) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(res, 400, { error: 'Informe o e-mail da conta.' });
+    if (type === 'whatsapp' && phone.replace(/\D/g, '').length < 8) return json(res, 400, { error: 'Informe o número comprado.' });
+    if (['whatsapp', 'sms24', 'adspower', 'expense', 'revenue', 'other'].includes(type) && (!Number.isFinite(amountCents) || amountCents <= 0)) return json(res, 400, { error: 'Informe um valor maior que zero.' });
+    if (['expense', 'revenue', 'other'].includes(type) && !description) return json(res, 400, { error: 'Informe a descrição.' });
+    const record = { id: crypto.randomUUID(), type, category, description, phone, email, amountCents, createdBy: user.id, createdByName: user.name, createdAt: new Date().toISOString() };
     records.unshift(record);
     if (records.length > 2000) records.length = 2000;
     saveList(RECORDS_FILE, records);

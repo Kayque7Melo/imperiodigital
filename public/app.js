@@ -671,7 +671,7 @@ function applyUiPreferences() {
 function overviewView(isAdmin, welcomeName) {
   const activityFilter=isAdmin?`<select class="search-input activity-user-filter" id="activity-user-filter"><option value="all" ${activityUserFilter==='all'?'selected':''}>Toda a equipe</option>${members.filter(item=>item.role!=='admin').map(item=>`<option value="${escapeHtml(item.id)}" ${activityUserFilter===item.id?'selected':''}>${escapeHtml(item.name)}</option>`).join('')}</select>`:'';
   const metricsClass = isAdmin ? 'metrics metrics-admin-full' : 'metrics';
-  return `<section class="welcome"><div><div class="eyebrow">${isAdmin ? 'PAINEL DO ADMINISTRADOR' : 'SEU ESPAÇO DE TRABALHO'}</div><h1>Olá, ${welcomeName} <span style="color:var(--blue)">✦</span></h1><p>Um novo dia para fazer boas ideias acontecerem.</p></div><div class="welcome-actions">${isAdmin ? `<button class="soft-btn" data-open-view="accounts">${svg('users', 14)} Ver contas</button><button class="primary-btn compact" data-open-view="create-account">${svg('plus', 14)} Nova conta</button>` : `<button class="soft-btn" id="copy-login">${svg('copy', 14)} Copiar meu login</button>`}<button class="soft-btn" data-open-view="ranking">${svg('chart', 14)} Ranking</button><button class="soft-btn" data-open-view="links">${svg('link', 14)} ${isAdmin ? 'Analisar links' : 'Meus links'}</button></div></section><section class="${metricsClass}">${(dashboardData?.stats || []).map(metricCard).join('')}</section><section><div class="section-title"><div><h2>Ritmo da operação</h2><p>${activityData.links||0} links enviados · ${activityData.approved||0} aprovados nesta visão</p></div>${activityFilter}</div><div class="content-grid"><article class="panel"><div class="panel-head"><h3>Movimento dos links</h3><span>Últimos 7 dias</span></div>${chartMarkup()}</article><article class="panel"><div class="panel-head"><h3>Status do sistema</h3><span class="module-state"><i></i> Online</span></div><div class="module-list"><div class="module-row"><span class="module-icon">${svg('spark', 15)}</span><span class="module-copy"><strong>Equipe em movimento</strong><small>Ranking e atividade atualizados</small></span><span class="module-state"><i></i> Ativo</span></div><div class="module-row"><span class="module-icon purple">${svg('shield', 15)}</span><span class="module-copy"><strong>Acesso protegido</strong><small>Contas geridas pelo administrador</small></span><span class="module-state"><i></i> Seguro</span></div></div></article></div><div class="access-banner"><span class="access-icon">${svg('lock', 16)}</span><span class="access-copy"><strong>${isAdmin ? 'Acesso administrativo' : 'Acesso individual'}</strong><p>${isAdmin ? 'Métricas financeiras visíveis somente para o administrador.' : 'Seu login é pessoal. Fale com o administrador para dúvidas.'}</p></span>${isAdmin ? `<span class="role-pill">Administrador</span>` : `<span class="role-pill">${escapeHtml(current?.username)}</span>`}</div><div class="cnpj-banner"><div class="cnpj-banner-left"><div class="cnpj-banner-icon">${recordTypeSvg('whatsapp', 0).replace('whatsapp',0)||''}${`<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="16" fill="#2563EB"/><text x="16" y="21" text-anchor="middle" fill="#fff" font-size="11" font-weight="800" font-family="sans-serif">CNPJ</text></svg>`}</div><div><strong>Consulta pública de CNPJ</strong><p>Acesse a ferramenta de consulta com sua conta — sem precisar de senha.</p></div></div><button class="primary-btn compact" type="button" id="open-cnpj-portal">${svg('arrow', 14)} Acessar Consulta de CNPJ</button></div></section>`;
+  return `<section class="welcome"><div><div class="eyebrow">${isAdmin ? 'PAINEL DO ADMINISTRADOR' : 'SEU ESPAÇO DE TRABALHO'}</div><h1>Olá, ${welcomeName} <span style="color:var(--blue)">✦</span></h1><p>Um novo dia para fazer boas ideias acontecerem.</p></div><div class="welcome-actions">${isAdmin ? `<button class="soft-btn" data-open-view="accounts">${svg('users', 14)} Ver contas</button><button class="primary-btn compact" data-open-view="create-account">${svg('plus', 14)} Nova conta</button>` : `<button class="soft-btn" id="copy-login">${svg('copy', 14)} Copiar meu login</button>`}<button class="soft-btn" data-open-view="ranking">${svg('chart', 14)} Ranking</button><button class="soft-btn" data-open-view="links">${svg('link', 14)} ${isAdmin ? 'Analisar links' : 'Meus links'}</button></div></section><section class="${metricsClass}">${(dashboardData?.stats || []).map(metricCard).join('')}</section><section><div class="section-title"><div><h2>Ritmo da operação</h2><p>${activityData.links||0} links enviados · ${activityData.approved||0} aprovados nesta visão</p></div>${activityFilter}</div><div class="content-grid"><article class="panel"><div class="panel-head"><h3>Movimento dos links</h3><span>Últimos 7 dias</span></div>${chartMarkup()}</article><article class="panel"><div class="panel-head"><h3>Status do sistema</h3><span class="module-state"><i></i> Online</span></div><div class="module-list"><div class="module-row"><span class="module-icon">${svg('spark', 15)}</span><span class="module-copy"><strong>Equipe em movimento</strong><small>Ranking e atividade atualizados</small></span><span class="module-state"><i></i> Ativo</span></div><div class="module-row"><span class="module-icon purple">${svg('shield', 15)}</span><span class="module-copy"><strong>Acesso protegido</strong><small>Contas geridas pelo administrador</small></span><span class="module-state"><i></i> Seguro</span></div></div></article></div><div class="access-banner"><span class="access-icon">${svg('lock', 16)}</span><span class="access-copy"><strong>${isAdmin ? 'Acesso administrativo' : 'Acesso individual'}</strong><p>${isAdmin ? 'Métricas financeiras visíveis somente para o administrador.' : 'Seu login é pessoal. Fale com o administrador para dúvidas.'}</p></span>${isAdmin ? `<span class="role-pill">Administrador</span>` : `<span class="role-pill">${escapeHtml(current?.username)}</span>`}</div><div class="cnpj-banner"><div class="cnpj-banner-preview"><img src="/tutorial/referencia-consulta-cnpj.png" alt="Referência visual de consulta pública de CNPJ" loading="lazy"></div><div class="cnpj-banner-copy"><span class="eyebrow">CNPJ</span><strong>Consulta pública de CNPJ</strong><p>Acesse a ferramenta de consulta com sua conta — sem precisar de senha.</p><button class="primary-btn compact" type="button" id="open-cnpj-portal">${svg('arrow', 14)} Acessar Consulta de CNPJ</button></div></div></section>`;
 }
 function tutorialView() {
   const steps = [
@@ -713,32 +713,30 @@ function tutorialView() {
    REGISTROS
 ═══════════════════════════════════════════ */
 const RECORD_TYPES = {
-  whatsapp:  { label: 'WhatsApp',   color: '#25D366', bg: 'rgba(37,211,102,.12)',  icon: 'whatsapp' },
-  sms24:     { label: 'SMS24',      color: '#FF6B35', bg: 'rgba(255,107,53,.12)',  icon: 'sms'      },
-  adspower:  { label: 'Ads Power',  color: '#6366F1', bg: 'rgba(99,102,241,.12)',  icon: 'ads'      },
-  payment:   { label: 'Pagamento',  color: '#F9C74F', bg: 'rgba(249,199,79,.12)',  icon: 'money'    },
-  revenue:   { label: 'Lucro',      color: '#2DD4BF', bg: 'rgba(45,212,191,.12)',  icon: 'chart'    },
-  other:     { label: 'Outro',      color: '#94A3B8', bg: 'rgba(148,163,184,.12)', icon: 'spark'    },
+  whatsapp:  { label: 'WhatsApp',  color: '#25D366', bg: 'rgba(37,211,102,.12)',  icon: 'whatsapp', fields: ['phone','amount'], phonePlaceholder: 'Número comprado (ex.: 5511999999999)', amountLabel: 'Valor pago (R$)', submitLabel: 'Registrar compra' },
+  sms24:     { label: 'SMS24',     color: '#FF6B35', bg: 'rgba(255,107,53,.12)',  icon: 'sms',      fields: ['email','amount'], emailPlaceholder: 'E-mail da conta SMS24', amountLabel: 'Valor recarregado (R$)', submitLabel: 'Registrar recarga' },
+  adspower:  { label: 'Ads Power', color: '#6366F1', bg: 'rgba(99,102,241,.12)', icon: 'ads',      fields: ['email','amount'], emailPlaceholder: 'E-mail da conta Ads Power', amountLabel: 'Valor do plano (R$)', submitLabel: 'Registrar plano' },
+  revenue:   { label: 'Lucro',     color: '#2DD4BF', bg: 'rgba(45,212,191,.12)', icon: 'chart',    fields: ['amount','desc'],  amountLabel: 'Valor recebido (R$)', descLabel: 'Descrição *', descPlaceholder: 'O que foi vendido / origem do lucro' },
+  expense:   { label: 'Despesa',   color: '#F59E0B', bg: 'rgba(245,158,11,.12)', icon: 'money',    fields: ['amount','desc'],  amountLabel: 'Valor pago (R$)', descLabel: 'Descrição *', descPlaceholder: 'Ex.: Ferramenta, serviço contratado…' },
+  other:     { label: 'Outro',     color: '#94A3B8', bg: 'rgba(148,163,184,.12)',icon: 'spark',    fields: ['amount','desc'],  amountLabel: 'Valor (R$)', descLabel: 'Descrição *', descPlaceholder: 'Descreva o registro' },
 };
 
 function recordTypeSvg(type, size = 20) {
-  const icons = {
-    whatsapp: `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#25D366"/><path fill="#fff" d="M22.9 9.1A9.7 9.7 0 0 0 7.1 20.3L6 26l5.8-1.5a9.7 9.7 0 0 0 11.1-15.4zm-6.9 14.9a8 8 0 0 1-4.1-1.1l-.3-.2-3.4.9.9-3.3-.2-.3a8 8 0 1 1 7.1 4zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5l-1.1-2.7c-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.6s1.1 3 1.3 3.2c.2.2 2.2 3.4 5.4 4.7.8.3 1.3.5 1.8.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4 0-.1-.2-.2-.4-.3z"/></svg>`,
-    sms:      `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#FF6B35"/><path fill="#fff" d="M8 10h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-5l-3 3-3-3H8a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 4h12v1.5H10V14zm0 3h8v1.5h-8V17z"/></svg>`,
-    ads:      `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#6366F1"/><path fill="#fff" d="M22 10H10a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-1 2-5 3.5L11 12h10zm1 8H10v-6.4l6 4.2 6-4.2V20z"/></svg>`,
-    money:    `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#F9C74F"/><path fill="#fff" d="M16 7a9 9 0 1 0 0 18A9 9 0 0 0 16 7zm.8 13.5v1h-1.6v-1.1c-1.3-.3-2.2-1.2-2.2-2.5h1.7c0 .7.5 1.1 1.2 1.1.8 0 1.2-.4 1.2-1 0-.6-.4-.9-1.4-1.2-1.4-.3-2.5-.9-2.5-2.3 0-1.1.8-2 2-2.3V11h1.6v1.2c1.2.3 2 1.1 2 2.4h-1.7c0-.7-.4-1.1-1.1-1.1-.7 0-1.1.3-1.1.9s.4.9 1.5 1.2c1.4.4 2.5 1 2.5 2.4 0 1.1-.8 2-2.1 2.5z"/></svg>`,
-    chart:    `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#2DD4BF"/><path fill="#fff" stroke="#fff" stroke-width=".3" d="M9 22V14h3v8H9zm5-10h3v10h-3V12zm5-4h3v14h-3V8z"/></svg>`,
-    spark:    `<svg width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#64748B"/><path fill="#fff" d="M16 7l1.8 5.4L23 14l-5.2 2-1.8 5.6-1.8-5.6L9 14l5.2-2L16 7z"/></svg>`,
-  };
-  return icons[type] || icons.spark;
+  const icons = { whatsapp: 'ri-whatsapp-line', sms: 'ri-message-2-line', ads: 'ri-global-line', money: 'ri-money-dollar-circle-line', chart: 'ri-line-chart-line', spark: 'ri-sparkling-2-line' };
+  return `<i class="ic ${icons[type] || icons.spark}" style="font-size:${size}px" aria-hidden="true"></i>`;
+}
+
+function recordFieldsMarkup(typeKey) {
+  const t = RECORD_TYPES[typeKey];
+  if (!t) return '';
+  const has = field => t.fields.includes(field);
+  return `${has('phone') ? `<label class="modal-field"><span>Número comprado <span class="req-mark">*</span></span><input name="phone" placeholder="${t.phonePlaceholder}" required maxlength="30" inputmode="numeric"></label>` : ''}${has('email') ? `<label class="modal-field"><span>E-mail da conta <span class="req-mark">*</span></span><input name="email" type="email" placeholder="${t.emailPlaceholder}" required maxlength="254"></label>` : ''}${has('amount') ? `<label class="modal-field"><span>${t.amountLabel} <span class="req-mark">*</span></span><span class="currency-input"><b>R$</b><input name="amount" type="number" min="0.01" step="0.01" placeholder="0,00" required></span></label>` : ''}${has('desc') ? `<label class="modal-field rec-desc-field"><span>${t.descLabel}</span><input name="description" placeholder="${t.descPlaceholder}" maxlength="300" required></label>` : ''}`;
 }
 
 function recordsView() {
-  const totalGasto   = recordsData.filter(r => ['whatsapp','sms24','adspower','payment'].includes(r.type) && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
+  const totalGasto   = recordsData.filter(r => ['whatsapp','sms24','adspower','expense','payment'].includes(r.type) && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
   const totalLucro   = recordsData.filter(r => r.type === 'revenue' && r.amountCents).reduce((s,r) => s + r.amountCents, 0);
   const saldo        = totalLucro - totalGasto;
-
-  const typeOpts = Object.entries(RECORD_TYPES).map(([v, t]) => `<option value="${v}">${t.label}</option>`).join('');
 
   return `<section class="admin-section records-page">
     <div class="section-title">
@@ -753,22 +751,22 @@ function recordsView() {
     </div>
 
     <article class="panel records-form-panel">
-      <div class="panel-head"><h3>${svg('plus', 14)} Novo registro</h3></div>
+      <div class="panel-head"><h3>${svg('plus', 14)} Novo registro</h3><span>Escolha o tipo para ver os campos correspondentes</span></div>
       <form id="record-form" class="records-form">
+
         <div class="records-type-grid" id="records-type-grid">
           ${Object.entries(RECORD_TYPES).map(([v, t]) => `
-            <label class="record-type-btn" data-type="${v}">
+            <label class="record-type-btn ${v === 'whatsapp' ? 'active' : ''}" data-type="${v}">
               <input type="radio" name="rec-type" value="${v}" ${v === 'whatsapp' ? 'checked' : ''} required>
-              <span class="rtb-icon">${recordTypeSvg(t.icon, 22)}</span>
+              <span class="rtb-icon">${recordTypeSvg(t.icon, 24)}</span>
               <span>${t.label}</span>
             </label>`).join('')}
         </div>
-        <div class="records-form-fields">
-          <label class="modal-field"><span>Descrição <span class="req-mark">*</span></span><input name="description" placeholder="Ex.: Recarga 100 créditos SMS" required maxlength="300"></label>
-          <label class="modal-field"><span>Categoria / produto</span><input name="category" placeholder="Ex.: Recarga, Conta, Assinatura…" maxlength="80"></label>
-          <label class="modal-field"><span>Número (WhatsApp/SMS)</span><input name="phone" placeholder="5511999999999" maxlength="30"></label>
-          <label class="modal-field"><span>Valor (R$)</span><span class="currency-input"><b>R$</b><input name="amount" type="number" min="0" step="0.01" placeholder="0,00"></span></label>
+
+        <div class="records-dynamic-fields" id="records-dynamic-fields">
+          ${recordFieldsMarkup('whatsapp')}
         </div>
+
         <div class="records-form-actions">
           <div class="login-error" id="record-form-error"></div>
           <button class="primary-btn" type="submit" id="record-submit">${svg('plus', 14)} Registrar</button>
@@ -777,13 +775,13 @@ function recordsView() {
     </article>
 
     <div class="records-list" id="records-list">
-      ${recordsData.length ? recordsData.map(r => recordCardHtml(r)).join('') : `<div class="records-empty"><strong>Nenhum registro ainda</strong><p>Use o formulário acima para registrar um gasto, compra ou lucro.</p></div>`}
+      ${recordsData.length ? recordsData.map(r => recordCardHtml(r)).join('') : `<div class="records-empty"><strong>Nenhum registro ainda</strong><p>Escolha um tipo acima para começar a registrar.</p></div>`}
     </div>
   </section>`;
 }
 
 function recordCardHtml(r) {
-  const t = RECORD_TYPES[r.type] || RECORD_TYPES.other;
+  const t = r.type === 'payment' ? RECORD_TYPES.expense : (RECORD_TYPES[r.type] || RECORD_TYPES.other);
   const isRevenue = r.type === 'revenue';
   return `<article class="record-card panel" data-record-id="${escapeHtml(r.id)}">
     <div class="record-card-left">
@@ -792,7 +790,7 @@ function recordCardHtml(r) {
     <div class="record-card-body">
       <div class="record-card-top">
         <span class="record-type-badge" style="color:${t.color};background:${t.bg}">${t.label}</span>
-        ${r.category ? `<span class="record-category">${escapeHtml(r.category)}</span>` : ''}
+        ${r.email ? `<span class="record-email">${escapeHtml(r.email)}</span>` : ''}
         ${r.phone ? `<span class="record-phone">${svg('link', 11)} +${escapeHtml(r.phone)}</span>` : ''}
       </div>
       <p class="record-description">${escapeHtml(r.description || '—')}</p>
@@ -897,8 +895,8 @@ function renderDashboard() {
     : activeView === 'settings' ? settingsView()
     : overviewView(isAdmin, welcomeName);
   const navigation = isAdmin
-    ? `${navItem('overview', 'Métricas', 'grid')}${navItem('create-account', 'Criar conta', 'plus')}${navItem('accounts', 'Gestão de contas', 'users', String(members.filter(member => member.role !== 'admin').length))}${navItem('rates', 'Valores dos links', 'spark')}${navItem('links', 'Gestão de links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('records', 'Registros', 'book')}${navItem('whatsapp', 'WhatsApp', 'whatsapp')}${navItem('tutorial', 'Tutoriais', 'play')}${navItem('access', 'Histórico de acessos', 'shield')}${navItem('settings', 'Configurações', 'settings')}`
-    : `${navItem('overview', 'Visão geral', 'grid')}${navItem('links', 'Meus links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('tutorial', 'Tutoriais', 'book')}${navItem('settings', 'Configurações', 'settings')}`;
+    ? `${navItem('overview', 'Métricas', 'grid')}${navItem('create-account', 'Criar conta', 'plus')}${navItem('accounts', 'Gestão de contas', 'users', String(members.filter(member => member.role !== 'admin').length))}${navItem('rates', 'Valores dos links', 'spark')}${navItem('links', 'Gestão de links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('tutorial', 'Tutoriais', 'play')}${navItem('access', 'Histórico de acessos', 'shield')}<div class="nav-divider"></div>${navItem('records', 'Registros', 'book')}${navItem('whatsapp', 'WhatsApp', 'whatsapp')}<div class="nav-divider"></div>${navItem('settings', 'Configurações', 'settings')}`
+    : `${navItem('overview', 'Visão geral', 'grid')}${navItem('links', 'Meus links', 'link', pendingBadge)}${navItem('ranking', 'Ranking', 'chart')}${navItem('tutorial', 'Tutoriais', 'book')}<div class="nav-divider"></div>${navItem('settings', 'Configurações', 'settings')}`;
   app.innerHTML = `<div class="dashboard">${dashboardData?.impersonating ? `<div class="impersonate-banner" style="grid-column:1/-1"><span>Você está visualizando o espaço de <strong>${escapeHtml(current.name)}</strong>.</span><button class="soft-btn" id="return-admin">${svg('arrow', 13)} Voltar à administração</button></div>` : ''}<aside class="sidebar"><div class="sidebar-brand">${brand()}</div><div class="side-label">Espaço de trabalho</div><nav class="nav">${navigation}</nav><div class="sidebar-bottom"><div class="workspace-card"><div class="workspace-card-head"><span class="workspace-icon">${svg('wave', 15)}</span><strong>Operação organizada</strong></div><p>Links, equipe e métricas da Império Digital em um só lugar.</p></div><div class="side-profile">${avatarMarkup(current)}<span class="profile-copy"><strong>${escapeHtml(current?.name)}</strong><small>${isAdmin ? 'Administrador' : 'Membro da equipe'}</small></span><button class="icon-btn" title="Sair da conta" id="logout">${svg('logout', 15)}</button></div></div></aside><main class="main"><header class="topbar"><div class="breadcrumb">IMPÉRIO DIGITAL&nbsp; / &nbsp;<b>${pageTitles[activeView] || 'Visão geral'}</b></div><div class="top-actions"><span class="top-time">${new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(new Date())}</span><div class="notification-wrap"><button class="notification-toggle" id="notification-toggle" title="Notificações">${svg('bell', 17)}<span id="notification-count" class="notification-count" ${unreadNotifications?'':'hidden'}>${unreadNotifications>9?'9+':unreadNotifications}</span></button><div class="notification-panel" id="notification-panel">${notificationMarkup()}</div></div></div></header><div class="page">${page}</div></main></div>`;
   document.querySelector('#logout')?.addEventListener('click', logout);
   document.querySelector('#return-admin')?.addEventListener('click', returnAdmin);
@@ -1025,13 +1023,22 @@ function renderDashboard() {
     const type = document.querySelector('#records-type-grid input[name="rec-type"]:checked')?.value || 'other';
     const amount = fields.get('amount');
     const amountCents = amount ? Math.round(Number(amount) * 100) : null;
+    const phone = (fields.get('phone') || '').trim().replace(/\D/g, '');
+    const email = (fields.get('email') || '').trim();
+    const description = (fields.get('description') || '').trim();
+    const category = RECORD_TYPES[type]?.label || type;
     btn.disabled = true; errorEl.classList.remove('show');
     try {
-      const record = await api('/api/records', { method: 'POST', body: JSON.stringify({ type, description: fields.get('description'), category: fields.get('category'), phone: fields.get('phone'), amountCents }) });
+      const record = await api('/api/records', { method: 'POST', body: JSON.stringify({ type, description, category, phone, email, amountCents }) });
       recordsData.unshift(record.record);
       const list = document.querySelector('#records-list');
       if (list) { if (list.querySelector('.records-empty')) list.innerHTML = ''; list.insertAdjacentHTML('afterbegin', recordCardHtml(record.record)); }
       form.reset();
+      // Reset dynamic fields back to whatsapp
+      document.querySelectorAll('.record-type-btn').forEach(l => l.classList.remove('active'));
+      document.querySelector('.record-type-btn')?.classList.add('active');
+      const firstInput = document.querySelector('#records-type-grid input[name="rec-type"]');
+      if (firstInput) { firstInput.checked = true; firstInput.closest('.record-type-btn')?.click(); }
       notify('Registro salvo.');
     } catch (err) { errorEl.textContent = err.message; errorEl.classList.add('show'); }
     finally { btn.disabled = false; }
@@ -1039,9 +1046,18 @@ function renderDashboard() {
   document.querySelectorAll('.record-type-btn').forEach(label => label.addEventListener('click', () => {
     document.querySelectorAll('.record-type-btn').forEach(l => l.classList.remove('active'));
     label.classList.add('active');
+    // Troca campos dinamicamente
+    const typeKey = label.dataset.type;
+    const t = RECORD_TYPES[typeKey];
+    if (!t) return;
+    const container = document.querySelector('#records-dynamic-fields');
+    if (!container) return;
+    container.innerHTML = recordFieldsMarkup(typeKey);
+    const submit = document.querySelector('#record-submit');
+    if (submit) submit.innerHTML = `${svg('plus', 14)} ${t.submitLabel || `Registrar ${t.label.toLowerCase()}`}`;
   }));
   // Set initial active type
-  document.querySelector('.record-type-btn')?.classList.add('active');
+  document.querySelector('.record-type-btn')?.click();
   document.querySelector('#records-list')?.addEventListener('click', async event => {
     const btn = event.target.closest('[data-delete-record]');
     if (!btn) return;

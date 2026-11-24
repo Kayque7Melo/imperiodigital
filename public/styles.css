@@ -383,6 +383,9 @@ body::after {
 .sidebar .brand-title { font-size: 13px }
 .side-label { color: var(--text3); text-transform: uppercase; font-size: 9px; letter-spacing: .18em; font-weight: 700; padding: 20px 10px 8px }
 .nav { display: grid; gap: 3px }
+.nav-divider { height: 1px; margin: 10px 8px; background: var(--border); }
+.nav-item[data-nav="records"], .nav-item[data-nav="whatsapp"] { font-size: 13px; font-weight: 650; padding-top: 12px; padding-bottom: 12px }
+.nav-item[data-nav="settings"] { margin-top: 2px; font-size: 12px; font-weight: 600 }
 .nav-item {
   width: 100%; display: flex; align-items: center; gap: 10px;
   padding: 10px 11px; border-radius: var(--r-sm);
@@ -1024,6 +1027,9 @@ html[data-theme="light"] .podium-card.place-1 { background: linear-gradient(160d
   }
   .sidebar-brand, .side-label, .sidebar-bottom { display: none }
   .nav { display: flex; justify-content: space-around; gap: 2px; overflow-x: auto }
+  .nav-divider { flex: 0 0 1px; height: 32px; align-self: center; margin: 0 4px; }
+  .nav-item[data-nav="records"], .nav-item[data-nav="whatsapp"] { font-size: 8px; padding: 7px 2px }
+  .nav-item[data-nav="settings"] { margin-top: 0; font-size: 8px }
   .nav-item {
     flex: 1 1 0; flex-direction: column; justify-content: center;
     min-width: 0; width: auto; padding: 7px 2px;
@@ -1390,8 +1396,9 @@ html[data-theme="light"] .link-value-card-v2 { background: #fff }
 .rtb-icon { display: flex; align-items: center; justify-content: center }
 
 /* Form fields row */
-.records-form-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 11px }
-.records-form-fields .modal-field input { height: 42px }
+.records-dynamic-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px }
+.records-dynamic-fields .modal-field input { height: 42px }
+.records-dynamic-fields .rec-desc-field { grid-column: 1 / -1 }
 .records-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px }
 .records-form-actions .login-error { flex: 1; margin: 0 }
 
@@ -1412,6 +1419,7 @@ html[data-theme="light"] .link-value-card-v2 { background: #fff }
 .record-card-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 6px }
 .record-type-badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 700 }
 .record-category { font-size: 11px; color: var(--text2); font-weight: 600 }
+.record-email { font-size: 11px; color: var(--text2); overflow-wrap: anywhere }
 .record-phone { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text3); font-variant-numeric: tabular-nums }
 .record-description { margin: 0 0 8px; font-size: 12px; color: var(--text); line-height: 1.55 }
 .record-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px }
@@ -1424,7 +1432,8 @@ html[data-theme="light"] .link-value-card-v2 { background: #fff }
 
 /* Responsive records */
 @media (max-width: 760px) {
-  .records-form-fields { grid-template-columns: 1fr }
+  .records-dynamic-fields { grid-template-columns: 1fr }
+  .records-dynamic-fields .rec-desc-field { grid-column: auto }
   .records-type-grid { gap: 7px }
   .record-type-btn { padding: 8px 10px; min-width: 60px; font-size: 9px }
   .records-summary { justify-content: flex-end }
@@ -1493,15 +1502,16 @@ html[data-theme="light"] .records-empty { border-color: rgba(0,0,0,.12) }
 
 /* ── CNPJ Banner (overview) ─────────────────────────────────────────── */
 .cnpj-banner {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  margin-top: 12px; padding: 15px 18px;
-  border: 1px solid rgba(37,99,235,.25); border-radius: var(--r-md);
-  background: linear-gradient(110deg, rgba(37,99,235,.10), rgba(37,99,235,.04));
-  flex-wrap: wrap;
+  display: grid; grid-template-columns: minmax(210px, 300px) minmax(0, 1fr); align-items: stretch; gap: 22px;
+  margin-top: 16px; padding: 16px;
+  border: 1px solid rgba(75,158,255,.24); border-radius: var(--r-md);
+  background: linear-gradient(120deg, rgba(75,158,255,.10), rgba(75,158,255,.025));
 }
-.cnpj-banner-left { display: flex; align-items: center; gap: 12px; min-width: 0 }
-.cnpj-banner-icon { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 11px; background: rgba(37,99,235,.12); overflow: hidden }
-.cnpj-banner strong { display: block; font-size: 13px; font-weight: 700 }
-.cnpj-banner p { margin: 3px 0 0; font-size: 11px; color: var(--text3) }
-html[data-theme="light"] .cnpj-banner { background: linear-gradient(110deg,rgba(37,99,235,.08),rgba(37,99,235,.02)); border-color: rgba(37,99,235,.20) }
-@media (max-width: 760px) { .cnpj-banner { flex-direction: column; align-items: flex-start } .cnpj-banner .primary-btn { width: 100% } }
+.cnpj-banner-preview { min-height: 130px; overflow: hidden; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2) }
+.cnpj-banner-preview img { display: block; width: 100%; height: 100%; max-height: 190px; object-fit: cover; object-position: center 38% }
+.cnpj-banner-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0 }
+.cnpj-banner-copy .eyebrow { color: var(--blue2); margin-bottom: 5px }
+.cnpj-banner-copy strong { display: block; font-size: 16px; font-weight: 750 }
+.cnpj-banner-copy p { margin: 5px 0 14px; font-size: 12px; color: var(--text3) }
+html[data-theme="light"] .cnpj-banner { background: linear-gradient(110deg,rgba(75,158,255,.08),rgba(75,158,255,.02)); border-color: rgba(37,99,235,.20) }
+@media (max-width: 760px) { .cnpj-banner { grid-template-columns: 1fr; gap: 14px } .cnpj-banner-preview img { max-height: 200px } .cnpj-banner-copy .primary-btn { width: 100% } }

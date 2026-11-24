@@ -14,6 +14,8 @@ let rankingPeriod = 'daily';
 let accessRows = [];
 let accessRequests = [];
 let recordsData = [];
+let approvedLinksData = [];
+let bmSalePrices = { 250: 0, 2000: 30000 };
 let recordsPeriod = 'month';
 let whatsappData = [];
 let accessUserFilter = 'all';
@@ -453,7 +455,7 @@ async function openDashboard() {
     await refreshNotifications(false);
     // Carrega dados das abas admin
     if (dashboardData.admin && !dashboardData.impersonating) {
-      try { const r = await api('/api/records', { headers: { 'X-CSRF-Token': csrf } }); recordsData = r.records || []; } catch {}
+      try { const r = await api('/api/records', { headers: { 'X-CSRF-Token': csrf } }); recordsData = r.records || []; approvedLinksData = r.approvedLinks || []; bmSalePrices = r.bmSalePrices || bmSalePrices; } catch {}
       try { const w = await api('/api/whatsapp', { headers: { 'X-CSRF-Token': csrf } }); whatsappData = w.numbers || []; } catch {}
     }
     if (notificationsTimer) clearInterval(notificationsTimer);
@@ -750,11 +752,20 @@ function recordPeriodRange(period, now = new Date()) {
 function recordTypeKey(record) { return String(record?.type || '').toLowerCase(); }
 function recordAmount(record) { const amount = Number(record?.amountCents); return Number.isFinite(amount) && amount > 0 ? amount : 0; }
 function isExpenseRecord(record) { return ['whatsapp', 'sms24', 'adspower', 'expense', 'payment', 'other'].includes(recordTypeKey(record)); }
+function bmNetProfit(link) { return Number(link?.salePriceCents || 0) - Number(link?.valueCents || 0); }
 function recordsForPeriod(period = recordsPeriod) {
   const range = recordPeriodRange(period);
   return recordsData.filter(record => {
     if (!range) return true;
     const date = new Date(record.createdAt);
+    return Number.isFinite(date.getTime()) && date >= range.start && date < range.end;
+  });
+}
+function approvedBmsForPeriod(period = recordsPeriod) {
+  const range = recordPeriodRange(period);
+  return approvedLinksData.filter(link => {
+    if (!range) return true;
+    const date = new Date(link.decidedAt || link.createdAt);
     return Number.isFinite(date.getTime()) && date >= range.start && date < range.end;
   });
 }
@@ -772,15 +783,25 @@ function recordsChartBuckets(period) {
   const base = period === 'year' ? new Date(now.getFullYear(), 0, 1) : new Date(now.getFullYear(), now.getMonth() - 11, 1);
   return Array.from({ length: 12 }, (_, index) => { const start = new Date(base.getFullYear(), base.getMonth() + index, 1); const next = new Date(start.getFullYear(), start.getMonth() + 1, 1); return { start, next, label: new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(start).replace('.', '') }; });
 }
-function recordsChartMarkup(records, period) {
+function recordsChartMarkup(records, approvedBms, period) {
   const buckets = recordsChartBuckets(period);
-  const values = buckets.map(bucket => records.reduce((totals, record) => {
+  const values = buckets.map(bucket => {
+    const totals = records.reduce((totals, record) => {
     const date = new Date(record.createdAt); if (!Number.isFinite(date.getTime()) || date < bucket.start || date >= bucket.next) return totals;
     const amount = recordAmount(record);
     if (isExpenseRecord(record)) totals.expense += amount;
     if (recordTypeKey(record) === 'revenue') totals.revenue += amount;
     return totals;
-  }, { expense: 0, revenue: 0 }));
+    }, { expense: 0, revenue: 0 });
+    for (const link of approvedBms) {
+      const date = new Date(link.decidedAt || link.createdAt);
+      if (!Number.isFinite(date.getTime()) || date < bucket.start || date >= bucket.next) continue;
+      const profit = bmNetProfit(link);
+      if (profit >= 0) totals.revenue += profit;
+      else totals.expense += Math.abs(profit);
+    }
+    return totals;
+  });
   const max = Math.max(1, ...values.flatMap(value => [value.expense, value.revenue]));
   const items = values.map((value, index) => `<div class="records-chart-item" title="${escapeHtml(buckets[index].label)} · Gastos ${money(value.expense)} · Lucros ${money(value.revenue)}"><div class="records-chart-pair"><span class="records-chart-bar expense" style="--bar-height:${Math.max(value.expense ? 3 : 0, value.expense / max * 112)}px"></span><span class="records-chart-bar revenue" style="--bar-height:${Math.max(value.revenue ? 3 : 0, value.revenue / max * 112)}px"></span></div><small>${escapeHtml(buckets[index].label)}</small></div>`).join('');
   return `<div class="records-chart-scroll"><div class="records-chart-bars">${items}</div></div>`;
@@ -788,13 +809,23 @@ function recordsChartMarkup(records, period) {
 
 function recordsView() {
   const visibleRecords = recordsForPeriod();
+  const visibleApprovedBms = approvedBmsForPeriod();
   const totalGasto = visibleRecords.reduce((sum, record) => sum + (isExpenseRecord(record) ? recordAmount(record) : 0), 0);
-  const totalLucro = visibleRecords.reduce((sum, record) => sum + (recordTypeKey(record) === 'revenue' ? recordAmount(record) : 0), 0);
+  const manualLucro = visibleRecords.reduce((sum, record) => sum + (recordTypeKey(record) === 'revenue' ? recordAmount(record) : 0), 0);
+  const bmLucro = visibleApprovedBms.reduce((sum, link) => sum + bmNetProfit(link), 0);
+  const totalLucro = manualLucro + bmLucro;
   const saldo        = totalLucro - totalGasto;
   const expenseGroups = [
     ['whatsapp', 'WhatsApp'], ['sms24', 'SMS24'], ['adspower', 'Ads Power'], ['expense', 'Despesas'], ['payment', 'Despesas antigas'], ['other', 'Outros'],
   ].map(([type, label]) => ({ label, cents: visibleRecords.reduce((sum, record) => sum + (recordTypeKey(record) === type ? recordAmount(record) : 0), 0) })).filter(item => item.cents > 0);
   const expenseBreakdown = expenseGroups.length ? expenseGroups.map(item => `<div class="records-breakdown-row"><span>${escapeHtml(item.label)}</span><strong>${money(item.cents)}</strong></div>`).join('') : '<div class="records-breakdown-empty">Sem gastos neste período.</div>';
+  const bmProfitGroups = ['250', '2000'].map(limit => {
+    const bms = visibleApprovedBms.filter(link => String(link.bmLimit) === limit);
+    const payouts = bms.reduce((sum, link) => sum + Number(link.valueCents || 0), 0);
+    const sales = bms.reduce((sum, link) => sum + Number(link.salePriceCents || 0), 0);
+    return { label: limit === '2000' ? 'BM 2k' : 'BM 250', count: bms.length, sales, payouts, profit: sales - payouts };
+  });
+  const bmProfitRows = bmProfitGroups.map(item => `<div class="records-bm-profit-row"><span><strong>${item.label}</strong><small>${item.count} aprovada${item.count === 1 ? '' : 's'} · Venda ${money(item.sales)} · Equipe ${money(item.payouts)}</small></span><b class="${item.profit < 0 ? 'negative' : ''}">${item.profit < 0 ? '− ' : ''}${money(Math.abs(item.profit))}</b></div>`).join('');
   const periodLabel = { week: 'esta semana', month: 'este mês', year: 'este ano', all: 'todo o histórico' }[recordsPeriod];
 
   return `<section class="admin-section records-page">
@@ -803,15 +834,18 @@ function recordsView() {
       <div class="records-summary">
         <span class="rec-sum-item gasto"><span class="rec-sum-label">Gastos · ${periodLabel}</span><strong>${money(totalGasto)}</strong></span>
         <span class="rec-sum-sep">·</span>
-        <span class="rec-sum-item lucro"><span class="rec-sum-label">Lucros · ${periodLabel}</span><strong>${money(totalLucro)}</strong></span>
+        <span class="rec-sum-item lucro ${totalLucro < 0 ? 'neg' : ''}"><span class="rec-sum-label">Lucros · ${periodLabel}</span><strong>${totalLucro < 0 ? '− ' : ''}${money(Math.abs(totalLucro))}</strong></span>
         <span class="rec-sum-sep">·</span>
         <span class="rec-sum-item saldo ${saldo >= 0 ? 'pos' : 'neg'}"><span class="rec-sum-label">Saldo · ${periodLabel}</span><strong>${saldo < 0 ? '− ' : ''}${money(Math.abs(saldo))}</strong></span>
       </div>
     </div>
 
+    <article class="panel records-pricing-panel"><div><h3>${svg('money', 15)} Preço de venda das BMs</h3><p>O lucro de cada BM aprovada é calculado como venda menos o valor configurado para a equipe.</p></div><form id="bm-sale-price-form"><label class="modal-field"><span>Venda BM 250</span><span class="currency-input"><b>R$</b><input name="bm250" type="number" min="0.01" step="0.01" value="${(Number(bmSalePrices[250] || 0) / 100).toFixed(2)}" required></span></label><label class="modal-field"><span>Venda BM 2k</span><span class="currency-input"><b>R$</b><input name="bm2000" type="number" min="0.01" step="0.01" value="${(Number(bmSalePrices[2000] || 0) / 100).toFixed(2)}" required></span></label><button class="primary-btn compact" type="submit">${svg('check', 14)} Salvar preços</button><div class="login-error" id="bm-sale-price-error"></div></form></article>
+
     <section class="records-analytics">
-      <article class="panel records-chart-panel"><div class="panel-head records-analytics-head"><div><h3>${svg('chart', 15)} Gastos e lucros</h3><span>Movimento financeiro por período</span></div><label class="records-period-control"><span>Período</span><select class="search-input" id="records-period-filter"><option value="week" ${recordsPeriod === 'week' ? 'selected' : ''}>Esta semana</option><option value="month" ${recordsPeriod === 'month' ? 'selected' : ''}>Este mês</option><option value="year" ${recordsPeriod === 'year' ? 'selected' : ''}>Este ano</option><option value="all" ${recordsPeriod === 'all' ? 'selected' : ''}>Todo o histórico</option></select></label></div><div class="records-chart-legend"><span><i class="expense"></i> Gastos</span><span><i class="revenue"></i> Lucros</span></div>${recordsChartMarkup(visibleRecords, recordsPeriod)}</article>
+      <article class="panel records-chart-panel"><div class="panel-head records-analytics-head"><div><h3>${svg('chart', 15)} Gastos e lucros</h3><span>Lucro BM = venda − repasse configurado · ${visibleApprovedBms.length} BMs aprovadas no período</span></div><label class="records-period-control"><span>Período</span><select class="search-input" id="records-period-filter"><option value="week" ${recordsPeriod === 'week' ? 'selected' : ''}>Esta semana</option><option value="month" ${recordsPeriod === 'month' ? 'selected' : ''}>Este mês</option><option value="year" ${recordsPeriod === 'year' ? 'selected' : ''}>Este ano</option><option value="all" ${recordsPeriod === 'all' ? 'selected' : ''}>Todo o histórico</option></select></label></div><div class="records-chart-legend"><span><i class="expense"></i> Gastos</span><span><i class="revenue"></i> Lucros líquidos e lucros registrados</span></div>${recordsChartMarkup(visibleRecords, visibleApprovedBms, recordsPeriod)}</article>
       <article class="panel records-breakdown"><div class="panel-head"><div><h3>${svg('money', 15)} Divisão de gastos</h3><span>${periodLabel}</span></div><strong>${money(totalGasto)}</strong></div><div class="records-breakdown-list">${expenseBreakdown}</div></article>
+      <article class="panel records-bm-profit"><div class="panel-head"><div><h3>${svg('chart', 15)} Lucro das BMs</h3><span>Venda menos repasse da equipe · ${periodLabel}</span></div><strong class="${bmLucro < 0 ? 'negative' : ''}">${bmLucro < 0 ? '− ' : ''}${money(Math.abs(bmLucro))}</strong></div><div class="records-bm-profit-list">${bmProfitRows}</div></article>
     </section>
 
     <article class="panel records-form-panel">
@@ -1078,6 +1112,25 @@ function renderDashboard() {
   document.querySelector('#refresh-panel')?.addEventListener('click', async event => { event.preventDefault(); await refreshDashboardPreservingScroll(); notify('Painel atualizado.'); });
   if (activeView === 'accounts') bindUserActions();
   // ── Registros bindings ──────────────────────────────────────────────────
+  document.querySelector('#bm-sale-price-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const error = document.querySelector('#bm-sale-price-error');
+    const fields = new FormData(form);
+    const bm250Cents = Math.round(Number(fields.get('bm250')) * 100);
+    const bm2000Cents = Math.round(Number(fields.get('bm2000')) * 100);
+    button.disabled = true; error.classList.remove('show');
+    try {
+      const result = await api('/api/admin/bm-sale-prices', { method: 'PATCH', body: JSON.stringify({ bm250Cents, bm2000Cents }) });
+      bmSalePrices = result.bmSalePrices;
+      const data = await api('/api/records', { headers: { 'X-CSRF-Token': csrf } });
+      recordsData = data.records || []; approvedLinksData = data.approvedLinks || []; bmSalePrices = data.bmSalePrices || bmSalePrices;
+      renderDashboard();
+      notify('Preços de venda das BMs salvos. Lucros atualizados.');
+    } catch (err) { error.textContent = err.message; error.classList.add('show'); }
+    finally { button.disabled = false; }
+  });
   document.querySelector('#record-form')?.addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;

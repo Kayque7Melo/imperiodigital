@@ -20,6 +20,8 @@ const ACCESS_FILE = path.join(DATA_DIR, 'access-history.json');
 const ACCESS_REQUESTS_FILE = path.join(DATA_DIR, 'access-requests.json');
 const RECORDS_FILE = path.join(DATA_DIR, 'records.json');
 const WHATSAPP_FILE = path.join(DATA_DIR, 'whatsapp.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const DEFAULT_BM_SALE_PRICES = Object.freeze({ 250: 0, 2000: 30000 });
 const sessions = new Map();
 const loginAttempts = new Map();
 
@@ -110,6 +112,22 @@ function saveList(file, list) {
   fs.writeFileSync(temp, JSON.stringify(list, null, 2), { mode: 0o600 });
   fs.renameSync(temp, file);
 }
+function normalizeBmSalePrices(value) {
+  return {
+    250: Number.isInteger(value?.[250]) && value[250] >= 0 ? value[250] : DEFAULT_BM_SALE_PRICES[250],
+    2000: Number.isInteger(value?.[2000]) && value[2000] >= 0 ? value[2000] : DEFAULT_BM_SALE_PRICES[2000],
+  };
+}
+function loadAppSettings() {
+  try { return normalizeBmSalePrices(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')).bmSalePrices); }
+  catch { return { ...DEFAULT_BM_SALE_PRICES }; }
+}
+function saveAppSettings() {
+  if (databasePool) return;
+  const temp = `${SETTINGS_FILE}.tmp`;
+  fs.writeFileSync(temp, JSON.stringify({ bmSalePrices }, null, 2), { mode: 0o600 });
+  fs.renameSync(temp, SETTINGS_FILE);
+}
 function saveLinks(links) {
   if (databasePool) return;
   const temp = `${LINKS_FILE}.tmp`;
@@ -125,6 +143,7 @@ let accessHistory = loadList(ACCESS_FILE);
 let accessRequests = loadList(ACCESS_REQUESTS_FILE);
 let records = loadList(RECORDS_FILE);
 let whatsappNumbers = loadList(WHATSAPP_FILE);
+let bmSalePrices = loadAppSettings();
 let fingerprintsUpdated = false;
 for (const link of links) {
   try {
@@ -142,7 +161,7 @@ if (linkFingerprints.size) saveList(LINK_FINGERPRINTS_FILE, [...linkFingerprints
 function initialDatabaseState() {
   if (!users.some(item => item.role === 'admin')) users.unshift({ id: crypto.randomUUID(), name: ADMIN_NAME, username: ADMIN_USERNAME, email: ADMIN_EMAIL, role: 'admin', active: true, avatar: '', ...hashPassword(ADMIN_PASSWORD), createdAt: new Date().toISOString() });
   // This is a fresh app-state store: never import old local records into the new Supabase project.
-  return { users, links, notifications, payouts, records: [], whatsappNumbers: [], linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
+  return { users, links, notifications, payouts, records: [], whatsappNumbers: [], bmSalePrices: { ...DEFAULT_BM_SALE_PRICES }, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
 }
 async function withDatabaseState(req, res, url, runHandler = handleApi) {
   let client = null;
@@ -167,6 +186,7 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     payouts = Array.isArray(state.payouts) ? state.payouts : [];
     records = Array.isArray(state.records) ? state.records : [];
     whatsappNumbers = Array.isArray(state.whatsappNumbers) ? state.whatsappNumbers : [];
+    bmSalePrices = normalizeBmSalePrices(state.bmSalePrices);
     linkFingerprints = new Set(Array.isArray(state.linkFingerprints) ? state.linkFingerprints : []);
     linkActivity = Array.isArray(state.linkActivity) ? state.linkActivity : [];
     accessHistory = Array.isArray(state.accessHistory) ? state.accessHistory : [];
@@ -178,7 +198,7 @@ async function withDatabaseState(req, res, url, runHandler = handleApi) {
     res.end = function(...args) {
       responseCompletion = (async () => {
         try {
-          const next = { users, links, notifications, payouts, records, whatsappNumbers, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
+          const next = { users, links, notifications, payouts, records, whatsappNumbers, bmSalePrices, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory, accessRequests, sessions: [...sessions.entries()] };
           await client.query('update equipe_digital_private.app_state set state = $1::jsonb, updated_at = now() where id = 1', [JSON.stringify(next)]);
           await client.query('COMMIT');
           client.release(); activeDatabaseClient = null;
@@ -591,7 +611,7 @@ async function handleApi(req, res, url) {
   if (url.pathname === '/api/admin/backup' && req.method === 'GET') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode baixar o backup.' });
     const safeUsers = users.map(({ hash, salt, ...profile }) => profile);
-    const snapshot = { application: 'Império Digital', createdAt: new Date().toISOString(), users: safeUsers, links, notifications, payouts, records, whatsappNumbers, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory: accessHistory.map(({ deviceKeyHash, ...item }) => item), accessRequests: accessRequests.map(({ fingerprint, ...item }) => item) };
+    const snapshot = { application: 'Império Digital', createdAt: new Date().toISOString(), users: safeUsers, links, notifications, payouts, records, whatsappNumbers, bmSalePrices, linkFingerprints: [...linkFingerprints], linkActivity, accessHistory: accessHistory.map(({ deviceKeyHash, ...item }) => item), accessRequests: accessRequests.map(({ fingerprint, ...item }) => item) };
     return json(res, 200, snapshot, { 'Content-Disposition': `attachment; filename="imperio-digital-backup-${new Date().toISOString().slice(0,10)}.json"` });
   }
   if (url.pathname === '/api/payouts' && req.method === 'POST') {
@@ -643,6 +663,7 @@ async function handleApi(req, res, url) {
     const canReanalyze = link.status === 'rejected' && Boolean(link.reanalysisRequestedAt);
     if (link.status !== 'pending' && !canReanalyze) return json(res, 409, { error: 'Este link já foi analisado.' });
     if (!['approved', 'rejected'].includes(body.status)) return json(res, 400, { error: 'Escolha aprovar ou desaprovar o link.' });
+    if (body.status === 'approved' && !bmSalePrices[link.bmLimit]) return json(res, 409, { error: `Configure o preço de venda da BM ${link.bmLimit === '2000' ? '2k' : '250'} antes de aprovar o link.` });
     const admin = body.status === 'approved' ? users.find(item => item.role === 'admin') : null;
     const adminApprovedCountBefore = admin ? adminApprovedLinkCount(admin) : 0;
     const adminPersonalBalanceBefore = admin ? adminPersonalBalance(admin) : 0;
@@ -651,8 +672,8 @@ async function handleApi(req, res, url) {
     link.decidedBy = user.id;
     link.reason = body.status === 'rejected' ? String(body.reason || '').trim().slice(0, 240) : '';
     link.reanalysisRequestedAt = null;
-    if (body.status === 'approved') { const owner = users.find(item => item.id === link.userId); link.valueCents = linkRateFor(owner, link.bmLimit); if (owner) owner.approvedLinks = (owner.approvedLinks || 0) + 1; if (admin) { admin.approvedLinksTotal = adminApprovedCountBefore + 1; admin.personalBalanceCents = adminPersonalBalanceBefore + adminLinkRateFor(admin); saveUsers(users); } }
-    else link.valueCents = 0;
+    if (body.status === 'approved') { const owner = users.find(item => item.id === link.userId); link.valueCents = linkRateFor(owner, link.bmLimit); link.salePriceCents = (bmSalePrices[link.bmLimit] || 0) > 0 ? bmSalePrices[link.bmLimit] : null; if (owner) owner.approvedLinks = (owner.approvedLinks || 0) + 1; if (admin) { admin.approvedLinksTotal = adminApprovedCountBefore + 1; admin.personalBalanceCents = adminPersonalBalanceBefore + adminLinkRateFor(admin); saveUsers(users); } }
+    else { link.valueCents = 0; link.salePriceCents = null; }
     const activity = linkActivity.find(item=>item.id===link.id); if(activity){activity.status=link.status;saveList(ACTIVITY_FILE,linkActivity)}
     saveLinks(links);
     addNotification(link.userId, body.status === 'approved' ? 'link-approved' : 'link-rejected', body.status === 'approved' ? 'Link aprovado' : 'Link desaprovado', `${link.publicId} foi ${body.status === 'approved' ? 'aprovado' : 'desaprovado'}${link.reason ? `: ${link.reason}` : '.'}`, { linkId: link.id });
@@ -817,9 +838,28 @@ async function handleApi(req, res, url) {
     return json(res, 200, { ok: true });
   }
   // ── REGISTROS ──────────────────────────────────────────────────────────────
+  if (url.pathname === '/api/admin/bm-sale-prices' && req.method === 'PATCH') {
+    if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas a administração pode alterar os preços de venda das BMs.' });
+    if (!csrfOkay(req, found.session)) return json(res, 403, { error: 'Sessão inválida. Atualize a página.' });
+    let body; try { body = await readBody(req); } catch (error) { return json(res, 400, { error: error.message }); }
+    const price250 = Number(body.bm250Cents);
+    const price2000 = Number(body.bm2000Cents);
+    if (!Number.isInteger(price250) || price250 < 1 || price250 > 100_000_000 || !Number.isInteger(price2000) || price2000 < 1 || price2000 > 100_000_000) return json(res, 400, { error: 'Informe preços maiores que zero e até R$ 1.000.000,00.' });
+    bmSalePrices = { 250: price250, 2000: price2000 };
+    let linksUpdated = false;
+    for (const link of links) {
+      if (link.status !== 'approved' || Number.isInteger(link.salePriceCents)) continue;
+      const configuredPrice = bmSalePrices[link.bmLimit];
+      if (configuredPrice > 0) { link.salePriceCents = configuredPrice; linksUpdated = true; }
+    }
+    if (linksUpdated) saveLinks(links);
+    saveAppSettings();
+    return json(res, 200, { bmSalePrices });
+  }
   if (url.pathname === '/api/records' && req.method === 'GET') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode ver registros.' });
-    return json(res, 200, { records: records.slice(0, 500) });
+    const approvedLinks = links.filter(link => link.status === 'approved').map(link => ({ id: link.id, publicId: link.publicId, bmLimit: link.bmLimit, decidedAt: link.decidedAt || link.createdAt, valueCents: linkValueFor(link), salePriceCents: link.salePriceCents ?? bmSalePrices[link.bmLimit] ?? 0 }));
+    return json(res, 200, { records: records.slice(0, 500), approvedLinks, bmSalePrices });
   }
   if (url.pathname === '/api/records' && req.method === 'POST') {
     if (user.role !== 'admin' || found.session.adminMode) return json(res, 403, { error: 'Apenas o administrador pode criar registros.' });

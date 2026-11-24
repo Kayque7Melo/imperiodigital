@@ -920,27 +920,22 @@ function whatsappView() {
       ${whatsappData.length ? whatsappData.map(n => waNumberCardHtml(n, team)).join('') : `<div class="records-empty"><strong>Nenhum número cadastrado</strong><p>Clique em "Adicionar número" para registrar um WhatsApp comprado.</p></div>`}
     </div>
   </section>
-
-  <div id="wa-add-modal" hidden>
-    <div class="modal-backdrop wa-modal-backdrop" id="wa-modal-backdrop">
-      <section class="modal wa-number-modal" role="dialog" aria-modal="true" aria-labelledby="wa-modal-title">
-        <div class="modal-head">
-          <div><div class="eyebrow">WHATSAPP</div><h2 id="wa-modal-title">Adicionar número</h2><p>Informe o número e o grupo ao qual pertence.</p></div>
-          <button class="icon-btn" id="wa-modal-close" aria-label="Fechar">${svg('close')}</button>
-        </div>
-        <form id="wa-add-form">
-          <div class="modal-field"><label for="wa-phone">Número (somente dígitos)</label><input id="wa-phone" name="phone" placeholder="5511999999999" required maxlength="20" inputmode="numeric"></div>
-          <div class="modal-field"><label for="wa-label">Nome / identificação</label><input id="wa-label" name="label" placeholder="Ex.: Conta principal" maxlength="80"></div>
-          <div class="modal-field"><label for="wa-group">Grupo</label><input id="wa-group" name="groupName" placeholder="Ex.: Grupo A, Equipe Norte…" maxlength="80"></div>
-          <div class="login-error" id="wa-modal-error"></div>
-          <div class="modal-actions">
-            <button class="soft-btn" type="button" id="wa-modal-cancel">Cancelar</button>
-            <button class="primary-btn compact" type="submit" id="wa-modal-submit">${svg('plus', 14)} Adicionar</button>
-          </div>
-        </form>
-      </section>
+  <dialog id="wa-add-modal" class="modal wa-number-modal" aria-labelledby="wa-modal-title">
+    <div class="modal-head">
+      <div><div class="eyebrow">WHATSAPP</div><h2 id="wa-modal-title">Adicionar número</h2><p>Informe o número e o grupo ao qual pertence.</p></div>
+      <button class="icon-btn" id="wa-modal-close" type="button" aria-label="Fechar">${svg('close')}</button>
     </div>
-  </div>`;
+    <form id="wa-add-form">
+      <div class="modal-field"><label for="wa-phone">Número (somente dígitos)</label><input id="wa-phone" name="phone" placeholder="5511999999999" required maxlength="20" inputmode="numeric"></div>
+      <div class="modal-field"><label for="wa-label">Nome / identificação</label><input id="wa-label" name="label" placeholder="Ex.: Conta principal" maxlength="80"></div>
+      <div class="modal-field"><label for="wa-group">Grupo</label><input id="wa-group" name="groupName" placeholder="Ex.: Grupo A, Equipe Norte…" maxlength="80"></div>
+      <div class="login-error" id="wa-modal-error"></div>
+      <div class="modal-actions">
+        <button class="soft-btn" type="button" id="wa-modal-cancel">Cancelar</button>
+        <button class="primary-btn compact" type="submit" id="wa-modal-submit">${svg('plus', 14)} Adicionar</button>
+      </div>
+    </form>
+  </dialog>`;
 }
 
 function waNumberCardHtml(n, team) {
@@ -1188,17 +1183,15 @@ function renderDashboard() {
   // ── WhatsApp bindings ───────────────────────────────────────────────────
   document.querySelector('#wa-add-btn')?.addEventListener('click', () => {
     const overlay = document.querySelector('#wa-add-modal');
-    document.body.append(overlay);
-    overlay.hidden = false;
+    if (!overlay?.open) overlay?.showModal();
     document.body.classList.add('modal-open');
-    document.addEventListener('keydown', onWaEscape);
     document.querySelector('#wa-phone')?.focus();
   });
-  const closeWaModal = () => { const overlay = document.querySelector('#wa-add-modal'); if (!overlay) return; overlay.hidden = true; document.body.classList.remove('modal-open'); document.removeEventListener('keydown', onWaEscape); document.querySelector('.page')?.append(overlay); document.querySelector('#wa-add-form')?.reset(); document.querySelector('#wa-modal-error')?.classList.remove('show'); };
-  const onWaEscape = event => { if (event.key === 'Escape') closeWaModal(); };
+  const closeWaModal = () => { const overlay = document.querySelector('#wa-add-modal'); if (!overlay) return; if (overlay.open) overlay.close(); document.body.classList.remove('modal-open'); document.querySelector('#wa-add-form')?.reset(); document.querySelector('#wa-modal-error')?.classList.remove('show'); };
+  document.querySelector('#wa-add-modal')?.addEventListener('cancel', event => { event.preventDefault(); closeWaModal(); });
   document.querySelector('#wa-modal-close')?.addEventListener('click', closeWaModal);
   document.querySelector('#wa-modal-cancel')?.addEventListener('click', closeWaModal);
-  document.querySelector('#wa-modal-backdrop')?.addEventListener('click', event => { if (event.target === event.currentTarget) closeWaModal(); });
+  document.querySelector('#wa-add-modal')?.addEventListener('click', event => { if (event.target === event.currentTarget) closeWaModal(); });
   document.querySelector('#wa-add-form')?.addEventListener('submit', async event => {
     event.preventDefault();
     const fields = new FormData(event.currentTarget);
